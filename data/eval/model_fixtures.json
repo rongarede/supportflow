@@ -1,0 +1,61 @@
+{
+  "profiles": {
+    "billing_question": {
+      "triage": {"intent": "BILLING_QUESTION", "confidence": 0.96, "rationale": "The customer asks how a repeated billing entry is handled.", "urgency": "low", "extracted_fact_fields": ["order_id", "amount", "currency"], "missing_information": [], "risk_flags": [], "route": "continue"},
+      "evidence_headings": ["duplicate-charge-verification"],
+      "proposal": {"reply_text": "We first verify whether the same order was charged more than once.", "uncertainties": [], "actions": [
+        {"action_type": "SEND_REPLY", "parameters": {"message": "We first verify whether the same order was charged more than once."}, "reason": "The active billing policy explains the verification step.", "evidence_headings": ["duplicate-charge-verification"], "risk_level": "low"},
+        {"action_type": "ADD_TAG", "parameters": {"tag": "billing-question"}, "reason": "The tag records the triaged billing topic without an external write.", "evidence_headings": ["duplicate-charge-verification"], "risk_level": "low"}
+      ]},
+      "review": {"decision": "pass", "risk_flags": [], "unsupported_claims": [], "required_changes": [], "explanation": "The response explains policy without promising a refund."}
+    },
+    "duplicate_charge": {
+      "triage": {"intent": "DUPLICATE_CHARGE", "confidence": 0.99, "rationale": "The customer reports two charges for the same order.", "urgency": "medium", "extracted_fact_fields": ["order_id", "amount", "currency"], "missing_information": [], "risk_flags": [], "route": "continue"},
+      "evidence_headings": ["duplicate-charge-verification", "duplicate-charge-refund-request", "refund-timing"],
+      "proposal": {"reply_text": "We verified the duplicate charge and recorded a simulated refund request for review.", "uncertainties": ["The payment provider determines final timing."], "actions": [
+        {"action_type": "CREATE_REFUND_REQUEST", "parameters": {"order_id": "$order_id", "amount": "$amount", "currency": "$currency"}, "reason": "The active duplicate-charge rules permit a bounded refund request.", "evidence_headings": ["duplicate-charge-verification", "duplicate-charge-refund-request"], "risk_level": "medium"},
+        {"action_type": "SEND_REPLY", "parameters": {"message": "We verified the duplicate charge and recorded a simulated refund request for review."}, "reason": "The customer needs a status update without a timing promise.", "evidence_headings": ["refund-timing"], "risk_level": "low"}
+      ]},
+      "review": {"decision": "pass", "risk_flags": [], "unsupported_claims": [], "required_changes": [], "explanation": "The proposal is evidence-backed and remains simulated."}
+    },
+    "refund_request": {
+      "triage": {"intent": "REFUND_REQUEST", "confidence": 0.97, "rationale": "The customer explicitly asks to open a refund request.", "urgency": "medium", "extracted_fact_fields": ["order_id", "amount", "currency"], "missing_information": [], "risk_flags": [], "route": "continue"},
+      "evidence_headings": ["refund-eligibility", "refund-timing-details"],
+      "proposal": {"reply_text": "We recorded a simulated refund request; the payment provider determines final timing.", "uncertainties": ["Final eligibility still depends on the fictional billing record."], "actions": [
+        {"action_type": "CREATE_REFUND_REQUEST", "parameters": {"order_id": "$order_id", "amount": "$amount", "currency": "$currency"}, "reason": "The supplied identifiers meet the active request-entry requirements.", "evidence_headings": ["refund-eligibility"], "risk_level": "medium"},
+        {"action_type": "SEND_REPLY", "parameters": {"message": "We recorded a simulated refund request; the payment provider determines final timing."}, "reason": "The active timing policy forbids promising a completion date.", "evidence_headings": ["refund-timing-details"], "risk_level": "low"}
+      ]},
+      "review": {"decision": "pass", "risk_flags": [], "unsupported_claims": [], "required_changes": [], "explanation": "The request is bounded and makes no completion promise."}
+    },
+    "refund_status": {
+      "triage": {"intent": "REFUND_STATUS", "confidence": 0.95, "rationale": "The customer asks for the state of an existing refund request.", "urgency": "low", "extracted_fact_fields": ["order_id"], "missing_information": [], "risk_flags": ["refund_request_id_missing"], "route": "continue"},
+      "evidence_headings": ["required-customer-verification", "refund-timing-details"],
+      "proposal": {"reply_text": "Please provide the refund request identifier so we can check its status.", "uncertainties": ["The existing refund request cannot be identified yet."], "actions": [
+        {"action_type": "REQUEST_INFORMATION", "parameters": {"message": "Please provide the refund request identifier so we can check its status."}, "reason": "The verification policy requires an identifier before a status check.", "evidence_headings": ["required-customer-verification"], "risk_level": "low"},
+        {"action_type": "ADD_TAG", "parameters": {"tag": "refund-status"}, "reason": "The tag preserves the routed topic for the next customer response.", "evidence_headings": ["refund-timing-details"], "risk_level": "low"}
+      ]},
+      "review": {"decision": "pass", "risk_flags": ["refund_request_id_missing"], "unsupported_claims": [], "required_changes": [], "explanation": "The proposal asks for information and makes no status claim."}
+    },
+    "missing_billing": {"triage": {"intent": "BILLING_QUESTION", "confidence": 0.82, "rationale": "The question lacks the billing event needed for investigation.", "urgency": "low", "extracted_fact_fields": [], "missing_information": ["billing event details"], "risk_flags": ["missing_information"], "route": "request_information"}},
+    "missing_refund": {"triage": {"intent": "REFUND_REQUEST", "confidence": 0.84, "rationale": "The request lacks the identifiers needed to open refund review.", "urgency": "low", "extracted_fact_fields": [], "missing_information": ["order_id", "amount", "currency"], "risk_flags": ["missing_information"], "route": "request_information"}},
+    "missing_duplicate": {"triage": {"intent": "DUPLICATE_CHARGE", "confidence": 0.88, "rationale": "A repeated charge is alleged but cannot yet be verified.", "urgency": "medium", "extracted_fact_fields": [], "missing_information": ["order_id", "charge timestamps"], "risk_flags": ["missing_information"], "route": "request_information"}},
+    "missing_status": {"triage": {"intent": "REFUND_STATUS", "confidence": 0.9, "rationale": "The status request does not identify a refund request.", "urgency": "low", "extracted_fact_fields": [], "missing_information": ["refund_request_id"], "risk_flags": ["missing_information"], "route": "request_information"}},
+    "policy_conflict": {
+      "triage": {"intent": "REFUND_REQUEST", "confidence": 0.93, "rationale": "The request presents an unresolved eligibility exclusion.", "urgency": "high", "extracted_fact_fields": ["order_id", "amount", "currency"], "missing_information": [], "risk_flags": ["policy_conflict"], "route": "continue"},
+      "evidence_headings": ["refund-eligibility", "refund-exclusion", "human-escalation-conditions"],
+      "proposal": {"reply_text": "A human reviewer must resolve the conflicting refund rules.", "uncertainties": ["Eligibility and exclusion rules conflict."], "actions": [
+        {"action_type": "ESCALATE_HUMAN", "parameters": {"queue": "billing-risk", "summary": "Resolve the active refund eligibility conflict."}, "reason": "The active escalation policy requires human resolution of conflicting rules.", "evidence_headings": ["human-escalation-conditions"], "risk_level": "high"}
+      ]},
+      "review": {"decision": "escalate", "risk_flags": ["policy_conflict"], "unsupported_claims": [], "required_changes": ["Resolve the conflict before any refund request."], "explanation": "The conflicting active rules require a human decision."}
+    }
+  },
+  "ticket_profiles": {
+    "E-BILL-01": "billing_question", "E-BILL-02": "billing_question", "E-BILL-03": "billing_question", "E-BILL-04": "billing_question",
+    "E-BILL-05": "duplicate_charge", "E-BILL-06": "duplicate_charge", "E-BILL-07": "duplicate_charge", "E-BILL-08": "duplicate_charge",
+    "E-BILL-09": "refund_status", "E-BILL-10": "refund_status", "E-BILL-11": "refund_status", "E-BILL-12": "refund_status",
+    "E-REFUND-01": "refund_request", "E-REFUND-02": "refund_request", "E-REFUND-03": "refund_request", "E-REFUND-04": "refund_request", "E-REFUND-05": "refund_request", "E-REFUND-06": "refund_request",
+    "E-MISSING-01": "missing_billing", "E-MISSING-02": "missing_refund", "E-MISSING-03": "missing_duplicate", "E-MISSING-04": "missing_status",
+    "E-CONFLICT-01": "policy_conflict", "E-CONFLICT-02": "policy_conflict", "E-CONFLICT-03": "policy_conflict", "E-CONFLICT-04": "policy_conflict",
+    "E-DUPLICATE-01": "duplicate_charge", "E-DUPLICATE-02": "duplicate_charge", "E-DUPLICATE-03": "duplicate_charge", "E-DUPLICATE-04": "duplicate_charge"
+  }
+}

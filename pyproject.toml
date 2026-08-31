@@ -1,0 +1,26 @@
+[project]
+name = "supportflow"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "langgraph>=1.2,<2",
+  "langgraph-checkpoint-sqlite>=3.1,<4",
+  "numpy>=2.5,<3",
+  "pydantic>=2.13,<3",
+  "pyyaml>=6,<7",
+  "rank-bm25==0.2.2",
+  "sentence-transformers>=6,<7",
+  "streamlit>=1.62,<2",
+]
+
+[project.optional-dependencies]
+real-llm = ["openai>=3.5,<4"]
+dev = ["pytest>=9.1,<10"]
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

@@ -1,0 +1,7 @@
+sources:
+  - source_id: bitext-customer-support
+    url: https://huggingface.co/datasets/bitext/Bitext-customer-support-llm-chatbot-training-dataset
+    license: cdla-sharing-1.0
+    fields_used: [instruction, category, intent]
+    use: expression_reference_only
+    copied_responses: false
