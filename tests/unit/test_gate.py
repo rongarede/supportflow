@@ -50,7 +50,25 @@ def _evidence(active: bool = True) -> EvidenceBundle:
                 content="Verify the duplicate charge before a refund request.",
                 active=active,
                 score=0.9,
-            )
+            ),
+            EvidenceItem(
+                evidence_id="policy-refund-request-001",
+                document_id="policy-refund-request",
+                version="1.0",
+                heading="duplicate-charge-refund-request",
+                content="Create a refund request for a verified duplicate charge.",
+                active=active,
+                score=0.8,
+            ),
+            EvidenceItem(
+                evidence_id="policy-refund-request-002",
+                document_id="policy-refund-request",
+                version="1.0",
+                heading="refund-timing",
+                content="Tell the customer when a submitted request may be resolved.",
+                active=active,
+                score=0.7,
+            ),
         ]
     )
 
@@ -59,7 +77,13 @@ def test_gate_allows_reviewed_evidence_backed_refund_request() -> None:
     decision = PolicyGate().evaluate(
         _ticket(),
         _evidence(),
-        _proposal(["policy-duplicate-charge-001"]),
+        _proposal(
+            [
+                "policy-duplicate-charge-001",
+                "policy-refund-request-001",
+                "policy-refund-request-002",
+            ]
+        ),
         RiskReview(escalated=False, rationale="Evidence supports a simulated refund request."),
     )
 
@@ -77,3 +101,28 @@ def test_gate_blocks_missing_evidence_reference() -> None:
 
     assert decision.outcome == "block"
     assert decision.failed_rules == ["PG-002"]
+
+
+def test_gate_blocks_active_but_irrelevant_evidence_for_duplicate_charge_refund() -> None:
+    evidence = EvidenceBundle(
+        items=[
+            EvidenceItem(
+                evidence_id="policy-password-reset-001",
+                document_id="policy-password-reset",
+                version="1.0",
+                heading="password-reset",
+                content="Reset a password after ownership verification.",
+                active=True,
+                score=0.99,
+            )
+        ]
+    )
+    decision = PolicyGate().evaluate(
+        _ticket(),
+        evidence,
+        _proposal(["policy-password-reset-001"]),
+        RiskReview(escalated=False, rationale="Review completed."),
+    )
+
+    assert decision.outcome == "block"
+    assert decision.failed_rules == ["PG-004"]

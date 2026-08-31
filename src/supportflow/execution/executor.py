@@ -4,6 +4,7 @@ from supportflow.domain.models import (
     ExecutionResult,
     ResolutionProposal,
 )
+from supportflow.domain.hashing import proposal_hash
 
 
 class InMemoryExecutor:
@@ -13,9 +14,15 @@ class InMemoryExecutor:
     def execute(
         self, run_id: str, proposal: ResolutionProposal, approval: ApprovalRecord | None
     ) -> list[ExecutionResult]:
-        if approval is None or approval.run_id != run_id or approval.proposal_hash != proposal.proposal_hash:
+        canonical_hash = proposal_hash(proposal)
+        if (
+            approval is None
+            or approval.run_id != run_id
+            or approval.proposal_hash != canonical_hash
+            or proposal.proposal_hash != canonical_hash
+        ):
             raise ApprovalMismatch("Execution requires approval for the exact reviewed proposal")
-        key = (run_id, proposal.proposal_hash)
+        key = (run_id, canonical_hash)
         if key not in self._completed:
             self._completed[key] = [
                 ExecutionResult(

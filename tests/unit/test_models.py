@@ -4,7 +4,13 @@ import pytest
 from pydantic import ValidationError
 
 from supportflow.domain.hashing import proposal_hash
-from supportflow.domain.models import ActionProposal, ResolutionProposal
+from supportflow.domain.models import (
+    ActionProposal,
+    ApprovalMismatch,
+    ApprovalRecord,
+    ResolutionProposal,
+)
+from supportflow.execution.executor import InMemoryExecutor
 
 
 def _proposal(reply_text: str = "We have submitted your refund request.") -> ResolutionProposal:
@@ -43,3 +49,17 @@ def test_reply_text_change_changes_canonical_proposal_hash() -> None:
     assert first.proposal_hash == proposal_hash(first)
     assert second.proposal_hash == proposal_hash(second)
     assert first.proposal_hash != second.proposal_hash
+
+
+def test_executor_rejects_proposal_mutated_after_exact_hash_approval() -> None:
+    proposal = _proposal()
+    approval = ApprovalRecord(
+        run_id="run-001",
+        proposal_hash=proposal.proposal_hash,
+        reviewer="portfolio-owner",
+        approved_at=datetime(2026, 8, 31, tzinfo=UTC),
+    )
+    proposal.actions[1].params["message"] = "A changed reply must require another approval."
+
+    with pytest.raises(ApprovalMismatch, match="exact reviewed proposal"):
+        InMemoryExecutor().execute("run-001", proposal, approval)

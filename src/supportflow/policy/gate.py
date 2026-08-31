@@ -16,22 +16,29 @@ class PolicyGate:
         passed: list[str] = ["PG-001"]
         failed: list[str] = []
         evidence_ids = {item.evidence_id for item in evidence.items}
-        if set(proposal.evidence_refs) <= evidence_ids:
+        references_exist = set(proposal.evidence_refs) <= evidence_ids
+        if references_exist:
             passed.append("PG-002")
         else:
             failed.append("PG-002")
         referenced = [item for item in evidence.items if item.evidence_id in proposal.evidence_refs]
-        if not set(proposal.evidence_refs) <= evidence_ids:
-            # An absent reference is already PG-002; PG-003 only evaluates existing citations.
-            passed.append("PG-003")
-        elif referenced and all(item.active for item in referenced):
-            passed.append("PG-003")
-        else:
-            failed.append("PG-003")
-        if proposal.evidence_refs:
-            passed.append("PG-004")
-        else:
-            failed.append("PG-004")
+        if references_exist:
+            if all(item.active for item in referenced):
+                passed.append("PG-003")
+            else:
+                failed.append("PG-003")
+            required_headings = {
+                ActionType.CREATE_REFUND_REQUEST: {
+                    "duplicate-charge-verification",
+                    "duplicate-charge-refund-request",
+                },
+                ActionType.SEND_REPLY: {"refund-timing"},
+            }
+            cited_headings = {item.heading for item in referenced}
+            if all(required_headings[action.action_type] <= cited_headings for action in proposal.actions):
+                passed.append("PG-004")
+            else:
+                failed.append("PG-004")
         if all(action.action_type in set(ActionType) for action in proposal.actions):
             passed.append("PG-005")
         else:
