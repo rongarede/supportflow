@@ -1,5 +1,4 @@
 {
-  "adapters": {"model": "FakeStructuredModel", "embedding": "FixedEmbeddingProvider"},
   "profiles": {
     "normal": {"missing_fields": [], "evidence_headings": ["duplicate-charge-verification", "duplicate-charge-refund-request", "refund-timing"]},
     "missing": {"missing_fields": ["provider failure time"], "evidence_headings": []},

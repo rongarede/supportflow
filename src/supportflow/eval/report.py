@@ -9,6 +9,8 @@ from typing import Any
 @dataclass(frozen=True)
 class EvaluationSummary:
     dataset_sha256: str
+    fixture_sha256: str
+    evaluation_input_sha256: str
     route_accuracy: float
     required_evidence_hit_rate: float
     citation_validity: float
@@ -38,8 +40,8 @@ def write_reports(
         },
         "cases": results,
     }
-    json_path = output_dir / f"eval-{summary.dataset_sha256}.json"
-    markdown_path = output_dir / f"eval-{summary.dataset_sha256}.md"
+    json_path = output_dir / f"eval-{summary.evaluation_input_sha256}.json"
+    markdown_path = output_dir / f"eval-{summary.evaluation_input_sha256}.md"
     json_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -48,6 +50,8 @@ def write_reports(
                 "",
                 f"- Dataset SHA-256: `{summary.dataset_sha256}`",
                 f"- Policy SHA-256: `{summary.policy_sha256}`",
+                f"- Model-fixture SHA-256: `{summary.fixture_sha256}`",
+                f"- Combined evaluation-input SHA-256: `{summary.evaluation_input_sha256}`",
                 f"- Adapters: `{adapters['model']}` + `{adapters['embedding']}`",
                 f"- Cases: {summary.case_count}",
                 f"- Route accuracy: {summary.route_accuracy:.3f}",

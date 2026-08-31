@@ -80,9 +80,18 @@ def _load_cases(dataset_path: Path) -> list[dict[str, Any]]:
 
 def _load_model_fixtures(dataset_path: Path) -> dict[str, Any]:
     fixtures = json.loads((dataset_path.parent / "model_fixtures.json").read_text(encoding="utf-8"))
-    if set(fixtures) != {"adapters", "profiles", "ticket_profiles"}:
+    if set(fixtures) != {"profiles", "ticket_profiles"}:
         raise ValueError("Frozen model fixtures have an unexpected schema")
     return fixtures
+
+
+def _evaluation_input_sha256(dataset_sha256: str, policy_sha256: str, fixture_sha256: str) -> str:
+    canonical = json.dumps(
+        {"fixture_sha256": fixture_sha256, "policy_sha256": policy_sha256, "tickets_sha256": dataset_sha256},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return _sha256_bytes(canonical.encode("utf-8"))
 
 
 def _configure_case_model(
@@ -245,6 +254,7 @@ def run_evaluation(
     service_factory: Callable[..., SupportFlowService],
     output_dir: Path,
     policy_directory: Path | None = None,
+    recovery_mutator: Callable[[SupportFlowService, dict[str, Any], Any], None] | None = None,
 ) -> EvaluationSummary:
     """Evaluate every frozen case through submit/resume and public human-action methods."""
     if os.environ.get("LANGGRAPH_STRICT_MSGPACK", "").strip().lower() != "true":
@@ -252,19 +262,35 @@ def run_evaluation(
     dataset_path = dataset_path.resolve()
     cases = _load_cases(dataset_path)
     fixtures = _load_model_fixtures(dataset_path)
+    fixture_sha256 = _sha256_bytes((dataset_path.parent / "model_fixtures.json").read_bytes())
     policy_directory = (policy_directory or dataset_path.parent.parent / "policies").resolve()
+    policy_sha256 = _policy_sha256(policy_directory)
+    dataset_sha256 = _sha256_bytes(dataset_path.read_bytes())
     shared_index = _build_frozen_index(policy_directory)
     results: list[dict[str, Any]] = []
+    adapters: dict[str, str] | None = None
     with TemporaryDirectory(prefix="supportflow-eval-runtime-") as temporary_directory:
         runtime_root = Path(temporary_directory)
         for case in cases:
             runtime_directory = runtime_root / case["case_id"]
+            ticket = Ticket.model_validate(case["ticket"])
+            control = service_factory(shared_index=shared_index, runtime_directory=runtime_root / f"{case['case_id']}-control")
+            control.graph.retriever = shared_index
+            _configure_case_model(control, ticket, fixtures, shared_index)
+            control_snapshot = control.submit(ticket)
             service = service_factory(shared_index=shared_index, runtime_directory=runtime_directory)
             if service._checkpoint_connection is None:
                 raise RuntimeError("Frozen evaluation requires a durable service runtime")
             service.graph.retriever = shared_index
-            ticket = Ticket.model_validate(case["ticket"])
             _configure_case_model(service, ticket, fixtures, shared_index)
+            runtime_adapters = {
+                "model": type(service.graph.triage.model).__name__,
+                "embedding": type(shared_index.embedding_provider).__name__,
+            }
+            if adapters is None:
+                adapters = runtime_adapters
+            elif adapters != runtime_adapters:
+                raise RuntimeError("Frozen evaluation adapter provenance changed between cases")
             interrupted = case["case_id"] == "billing-01"
             if interrupted:
                 run_id = _submit_with_partial_checkpoint(service, ticket)
@@ -276,17 +302,12 @@ def run_evaluation(
             reopened.graph.retriever = shared_index
             _configure_case_model(reopened, ticket, fixtures, shared_index)
             recovered = reopened.resume(run_id)
-            if initial is None:
-                comparison = service_factory(shared_index=shared_index, runtime_directory=runtime_directory)
-                comparison.graph.retriever = shared_index
-                _configure_case_model(comparison, ticket, fixtures, shared_index)
-                compared = comparison.resume(run_id)
-                expected_signature = _snapshot_signature(recovered, reopened)
-                observed_signature = _snapshot_signature(compared, comparison)
-                initial = recovered
-            else:
-                expected_signature = _snapshot_signature(initial, service)
-                observed_signature = _snapshot_signature(recovered, reopened)
+            if recovery_mutator is not None:
+                recovery_mutator(reopened, case, recovered)
+                recovered = reopened.snapshot(run_id)
+            expected_signature = _snapshot_signature(control_snapshot, control)
+            observed_signature = _snapshot_signature(recovered, reopened)
+            initial = recovered
             recovery = {
                 "interrupted_partial_checkpoint": interrupted,
                 "reopened_snapshot_matches": _recovery_matches(expected_signature, observed_signature),
@@ -302,7 +323,9 @@ def run_evaluation(
     case_count = len(results)
     evidence_total = sum(result["required_evidence_total"] for result in results)
     summary = EvaluationSummary(
-        dataset_sha256=_sha256_bytes(dataset_path.read_bytes()),
+        dataset_sha256=dataset_sha256,
+        fixture_sha256=fixture_sha256,
+        evaluation_input_sha256=_evaluation_input_sha256(dataset_sha256, policy_sha256, fixture_sha256),
         route_accuracy=sum(result["route_correct"] for result in results) / case_count,
         required_evidence_hit_rate=(sum(result["required_evidence_hits"] for result in results) / evidence_total if evidence_total else 1.0),
         citation_validity=sum(result["citations_valid"] for result in results) / case_count,
@@ -311,10 +334,10 @@ def run_evaluation(
         unapproved_execution_count=sum(result["unapproved_execution_count"] for result in results),
         duplicate_side_effect_count=sum(result["duplicate_side_effect_count"] for result in results),
         recovery_failure_count=sum(result["recovery_failure_count"] for result in results),
-        policy_sha256=_policy_sha256(policy_directory),
+        policy_sha256=policy_sha256,
         case_count=case_count,
     )
-    write_reports(summary, results, output_dir, fixtures["adapters"])
+    write_reports(summary, results, output_dir, adapters or {})
     return summary
 
 

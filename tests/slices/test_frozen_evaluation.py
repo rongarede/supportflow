@@ -56,8 +56,8 @@ def test_frozen_dataset_runs_complete_workflow(tmp_path, service_factory) -> Non
     assert summary.unapproved_execution_count == 0
     assert summary.duplicate_side_effect_count == 0
     assert summary.recovery_failure_count == 0
-    assert (tmp_path / f"eval-{summary.dataset_sha256}.json").exists()
-    assert (tmp_path / f"eval-{summary.dataset_sha256}.md").exists()
+    assert (tmp_path / f"eval-{summary.evaluation_input_sha256}.json").exists()
+    assert (tmp_path / f"eval-{summary.evaluation_input_sha256}.md").exists()
 
 
 def test_cli_evaluate_runs_the_same_frozen_journey(tmp_path) -> None:
@@ -102,6 +102,7 @@ def test_evaluator_refuses_a_non_durable_service(tmp_path, monkeypatch) -> None:
 
 
 def _write_dataset(path: Path, rows: list[dict]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
     (path.parent / "model_fixtures.json").write_bytes(Path("data/eval/model_fixtures.json").read_bytes())
     return path
@@ -159,8 +160,8 @@ def test_reports_are_trackable_deterministic_and_include_fixture_audit_context(
     from supportflow.eval.runner import run_evaluation
 
     first = run_evaluation(Path("data/eval/tickets.jsonl"), service_factory, tmp_path)
-    json_path = tmp_path / f"eval-{first.dataset_sha256}.json"
-    markdown_path = tmp_path / f"eval-{first.dataset_sha256}.md"
+    json_path = tmp_path / f"eval-{first.evaluation_input_sha256}.json"
+    markdown_path = tmp_path / f"eval-{first.evaluation_input_sha256}.md"
     first_hashes = (json_path.read_bytes(), markdown_path.read_bytes())
     second = run_evaluation(Path("data/eval/tickets.jsonl"), service_factory, tmp_path)
     payload = json.loads(json_path.read_text())
@@ -191,7 +192,7 @@ def test_evaluation_reopens_a_partial_durable_run_and_audits_recovery_equivalenc
     from supportflow.eval.runner import run_evaluation
 
     summary = run_evaluation(Path("data/eval/tickets.jsonl"), service_factory, tmp_path)
-    payload = json.loads((tmp_path / f"eval-{summary.dataset_sha256}.json").read_text())
+    payload = json.loads((tmp_path / f"eval-{summary.evaluation_input_sha256}.json").read_text())
     recovery = next(case["recovery"] for case in payload["cases"] if case["case_id"] == "billing-01")
 
     assert recovery["interrupted_partial_checkpoint"] is True
@@ -224,3 +225,52 @@ def test_recovery_comparison_detects_changed_reopened_state(tmp_path, service_fa
     changed = reopened.reject(recovered.run_id, "test divergence", "reviewer")
 
     assert _recovery_matches(before, _snapshot_signature(changed, reopened)) is False
+
+
+def test_run_evaluation_counts_a_fault_in_first_recovered_snapshot(tmp_path, service_factory) -> None:
+    """Catches a recovery oracle copied from the already-corrupted first recovery."""
+    from supportflow.eval.runner import run_evaluation
+
+    def corrupt_first_recovery(service, case, snapshot) -> None:
+        if case["case_id"] == "missing-01":
+            service.graph.compiled.update_state(
+                service._config(snapshot.run_id), {"terminal_state": "NEEDS_ATTENTION"}
+            )
+
+    summary = run_evaluation(
+        Path("data/eval/tickets.jsonl"), service_factory, tmp_path, recovery_mutator=corrupt_first_recovery
+    )
+
+    assert summary.recovery_failure_count == 1
+
+
+def test_model_fixture_change_gets_a_new_combined_evaluation_artifact_id(tmp_path, service_factory) -> None:
+    """Catches report filenames that ignore executable frozen model fixtures."""
+    from supportflow.eval.runner import run_evaluation
+
+    baseline = run_evaluation(Path("data/eval/tickets.jsonl"), service_factory, tmp_path / "baseline")
+    rows = [json.loads(line) for line in Path("data/eval/tickets.jsonl").read_text().splitlines()]
+    dataset = _write_dataset(tmp_path / "changed" / "tickets.jsonl", rows)
+    fixture_path = dataset.parent / "model_fixtures.json"
+    fixture = json.loads(fixture_path.read_text())
+    fixture["profiles"]["normal"]["fixture_note"] = "identity-change-only"
+    fixture_path.write_text(json.dumps(fixture), encoding="utf-8")
+    changed = run_evaluation(dataset, service_factory, tmp_path / "changed-output", Path("data/policies"))
+
+    assert changed.evaluation_input_sha256 != baseline.evaluation_input_sha256
+    assert (tmp_path / "changed-output" / f"eval-{changed.evaluation_input_sha256}.json").exists()
+
+
+def test_falsified_fixture_adapter_label_is_rejected_not_reported(tmp_path, service_factory) -> None:
+    """Catches adapter provenance copied from an executable fixture rather than runtime instances."""
+    from supportflow.eval.runner import run_evaluation
+
+    rows = [json.loads(line) for line in Path("data/eval/tickets.jsonl").read_text().splitlines()]
+    dataset = _write_dataset(tmp_path / "falsified" / "tickets.jsonl", rows)
+    fixture_path = dataset.parent / "model_fixtures.json"
+    fixture = json.loads(fixture_path.read_text())
+    fixture["adapters"] = {"model": "Liar", "embedding": "Liar"}
+    fixture_path.write_text(json.dumps(fixture), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="unexpected schema"):
+        run_evaluation(dataset, service_factory, tmp_path / "output", Path("data/policies"))
