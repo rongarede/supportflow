@@ -11,12 +11,12 @@ from supportflow.rag.documents import PolicyChunk
 from supportflow.rag.embeddings import EmbeddingProvider
 
 
-def reciprocal_rank_fusion(vector_ids: list[str], bm25_ids: list[str]) -> list[str]:
+def reciprocal_rank_fusion(vector_ids: list[str], bm25_ids: list[str], limit: int = 5) -> list[str]:
     scores: dict[str, float] = defaultdict(float)
     for ranked_ids in (vector_ids, bm25_ids):
         for rank, evidence_id in enumerate(ranked_ids, start=1):
             scores[evidence_id] += 1 / (60 + rank)
-    return sorted(scores, key=lambda item: (-scores[item], item))[:5]
+    return sorted(scores, key=lambda item: (-scores[item], item))[:limit]
 
 
 class RagRetriever:
@@ -48,7 +48,8 @@ class RagRetriever:
         fused = reciprocal_rank_fusion(
             [active_chunks[index].evidence_id for index in vector_order],
             [active_chunks[index].evidence_id for index in bm25_order],
-        )[:top_k]
+            limit=top_k,
+        )
         return EvidenceBundle(
             items=[
                 EvidenceItem(

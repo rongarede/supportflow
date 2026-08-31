@@ -39,6 +39,8 @@ class PolicyGate:
                 passed.append("PG-004")
             else:
                 failed.append("PG-004")
+            if {"refund-eligibility", "refund-exclusion"} <= cited_headings:
+                failed.append("PG-009")
         if all(action.action_type in set(ActionType) for action in proposal.actions):
             passed.append("PG-005")
         else:
@@ -56,9 +58,17 @@ class PolicyGate:
             passed.append("PG-008")
         else:
             failed.append("PG-008")
+        escalation_failures = {"PG-003", "PG-007", "PG-009"}
+        outcome = "allow" if not failed else "escalate" if escalation_failures.intersection(failed) else "block"
         return PolicyDecision(
-            outcome="allow" if not failed else "block",
+            outcome=outcome,
             passed_rules=passed,
             failed_rules=failed,
-            rationale="All deterministic policy checks passed." if not failed else "Policy checks blocked execution.",
+            rationale=(
+                "All deterministic policy checks passed."
+                if not failed
+                else "Policy checks require a human escalation."
+                if outcome == "escalate"
+                else "Policy checks blocked execution."
+            ),
         )

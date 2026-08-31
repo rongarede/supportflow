@@ -13,6 +13,10 @@ class StrictModel(BaseModel):
 
 class TicketState(str, Enum):
     WAITING_APPROVAL = "WAITING_APPROVAL"
+    WAITING_CUSTOMER = "WAITING_CUSTOMER"
+    REJECTED = "REJECTED"
+    ESCALATED = "ESCALATED"
+    NEEDS_ATTENTION = "NEEDS_ATTENTION"
     COMPLETED = "COMPLETED"
     BLOCKED = "BLOCKED"
 
@@ -56,6 +60,7 @@ class TriageResult(StrictModel):
     intent: Intent
     confidence: float = Field(ge=0, le=1)
     rationale: str
+    missing_fields: list[str] = Field(default_factory=list)
 
 
 class EvidenceItem(StrictModel):
@@ -114,7 +119,7 @@ class RiskReview(StrictModel):
 
 
 class PolicyDecision(StrictModel):
-    outcome: Literal["allow", "block"]
+    outcome: Literal["allow", "block", "escalate", "revise"]
     passed_rules: list[str] = Field(default_factory=list)
     failed_rules: list[str] = Field(default_factory=list)
     rationale: str
@@ -125,6 +130,7 @@ class ApprovalRecord(StrictModel):
     proposal_hash: str
     reviewer: str
     approved_at: datetime
+    status: Literal["approved", "superseded"] = "approved"
 
     @model_validator(mode="after")
     def normalise_approved_at(self) -> ApprovalRecord:
@@ -178,6 +184,7 @@ class RunSnapshot(StrictModel):
     risk_review: RiskReview | None = None
     policy_decision: PolicyDecision | None = None
     approval: ApprovalRecord | None = None
+    approvals: list[ApprovalRecord] = Field(default_factory=list)
     execution_results: list[ExecutionResult] = Field(default_factory=list)
     trace: list[TraceEvent] = Field(default_factory=list)
     errors: list[RunError] = Field(default_factory=list)

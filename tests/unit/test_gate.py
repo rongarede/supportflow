@@ -126,3 +126,58 @@ def test_gate_blocks_active_but_irrelevant_evidence_for_duplicate_charge_refund(
 
     assert decision.outcome == "block"
     assert decision.failed_rules == ["PG-004"]
+
+
+def test_gate_escalates_inactive_evidence_instead_of_treating_it_as_executable() -> None:
+    decision = PolicyGate().evaluate(
+        _ticket(),
+        _evidence(active=False),
+        _proposal(
+            [
+                "policy-duplicate-charge-001",
+                "policy-refund-request-001",
+                "policy-refund-request-002",
+            ]
+        ),
+        RiskReview(escalated=False, rationale="The expired rule is retained for audit."),
+    )
+
+    assert decision.outcome == "escalate"
+    assert "PG-003" in decision.failed_rules
+
+
+def test_gate_escalates_unresolved_eligibility_and_exclusion_conflict() -> None:
+    evidence = _evidence().model_copy(
+        update={
+            "items": [
+                *_evidence().items,
+                EvidenceItem(
+                    evidence_id="policy-refund-eligibility-001",
+                    document_id="policy-refund-eligibility",
+                    version="1.0",
+                    heading="refund-eligibility",
+                    content="The duplicate charge is eligible.",
+                    active=True,
+                    score=0.6,
+                ),
+                EvidenceItem(
+                    evidence_id="policy-refund-eligibility-002",
+                    document_id="policy-refund-eligibility",
+                    version="1.0",
+                    heading="refund-exclusion",
+                    content="An exclusion might apply.",
+                    active=True,
+                    score=0.5,
+                ),
+            ]
+        }
+    )
+    decision = PolicyGate().evaluate(
+        _ticket(),
+        evidence,
+        _proposal([item.evidence_id for item in evidence.items]),
+        RiskReview(escalated=False, rationale="The exclusion has not been resolved."),
+    )
+
+    assert decision.outcome == "escalate"
+    assert "PG-009" in decision.failed_rules
