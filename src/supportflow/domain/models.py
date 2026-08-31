@@ -22,12 +22,18 @@ class TicketState(str, Enum):
 
 
 class Intent(str, Enum):
+    BILLING_QUESTION = "BILLING_QUESTION"
+    REFUND_REQUEST = "REFUND_REQUEST"
     DUPLICATE_CHARGE = "DUPLICATE_CHARGE"
+    REFUND_STATUS = "REFUND_STATUS"
 
 
 class ActionType(str, Enum):
-    CREATE_REFUND_REQUEST = "CREATE_REFUND_REQUEST"
     SEND_REPLY = "SEND_REPLY"
+    ADD_TAG = "ADD_TAG"
+    REQUEST_INFORMATION = "REQUEST_INFORMATION"
+    CREATE_REFUND_REQUEST = "CREATE_REFUND_REQUEST"
+    ESCALATE_HUMAN = "ESCALATE_HUMAN"
 
 
 def _utc(value: datetime) -> datetime:
@@ -60,7 +66,16 @@ class TriageResult(StrictModel):
     intent: Intent
     confidence: float = Field(ge=0, le=1)
     rationale: str
-    missing_fields: list[str] = Field(default_factory=list)
+    urgency: Literal["low", "medium", "high"]
+    extracted_facts: dict[str, str]
+    missing_information: list[str]
+    risk_flags: list[str]
+    route: Literal["continue", "request_information", "escalate_human"]
+
+    @property
+    def missing_fields(self) -> list[str]:
+        """Compatibility name for the pre-contract workflow implementation."""
+        return self.missing_information
 
 
 class EvidenceItem(StrictModel):
@@ -80,24 +95,42 @@ class EvidenceBundle(StrictModel):
 
 class ActionProposal(StrictModel):
     action_type: ActionType
-    params: dict[str, Any]
+    parameters: dict[str, Any]
+    reason: str = Field(min_length=1)
+    evidence_refs: list[str] = Field(min_length=1)
+    risk_level: Literal["low", "medium", "high"]
+
+    @property
+    def params(self) -> dict[str, Any]:
+        """Compatibility accessor; serialized contracts use `parameters`."""
+        return self.parameters
 
     @model_validator(mode="after")
     def validate_action_parameters(self) -> ActionProposal:
         if self.action_type == ActionType.CREATE_REFUND_REQUEST:
             required = {"order_id", "amount", "currency"}
-            missing = sorted(key for key in required if not self.params.get(key))
+            missing = sorted(key for key in required if not self.parameters.get(key))
             if missing:
                 raise ValueError(f"CREATE_REFUND_REQUEST requires {', '.join(missing)}")
-        if self.action_type == ActionType.SEND_REPLY and not self.params.get("message"):
-            raise ValueError("SEND_REPLY requires message")
+        required_by_action = {
+            ActionType.SEND_REPLY: {"message"},
+            ActionType.ADD_TAG: {"tag"},
+            ActionType.REQUEST_INFORMATION: {"message"},
+            ActionType.ESCALATE_HUMAN: {"queue", "summary"},
+        }
+        required = required_by_action.get(self.action_type, set())
+        missing = sorted(key for key in required if not self.parameters.get(key))
+        if missing:
+            raise ValueError(f"{self.action_type.value} requires {', '.join(missing)}")
         return self
 
 
 class ResolutionProposal(StrictModel):
     ticket_id: str
+    reply_text: str = Field(min_length=1)
     evidence_refs: list[str] = Field(min_length=1)
     actions: list[ActionProposal] = Field(min_length=1)
+    uncertainties: list[str]
     created_at: datetime
     proposal_hash: str = ""
 
@@ -115,8 +148,19 @@ class ResolutionProposal(StrictModel):
 
 
 class RiskReview(StrictModel):
-    escalated: bool
-    rationale: str
+    decision: Literal["pass", "revise", "escalate"]
+    risk_flags: list[str]
+    unsupported_claims: list[str]
+    required_changes: list[str]
+    explanation: str = Field(min_length=1)
+
+    @property
+    def escalated(self) -> bool:
+        return self.decision == "escalate"
+
+    @property
+    def rationale(self) -> str:
+        return self.explanation
 
 
 class PolicyDecision(StrictModel):
@@ -171,8 +215,22 @@ class TraceEvent(StrictModel):
 
 
 class RunError(StrictModel):
-    code: str
+    stage: str
+    error_type: str
     message: str
+    attempt: int = Field(ge=1)
+    retryable: bool
+    occurred_at: datetime
+
+    @property
+    def code(self) -> str:
+        """Compatibility name used by the workbench and earlier tests."""
+        return self.error_type
+
+    @model_validator(mode="after")
+    def normalise_occurred_at(self) -> RunError:
+        self.occurred_at = _utc(self.occurred_at)
+        return self
 
 
 class CheckpointBrief(StrictModel):

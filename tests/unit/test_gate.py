@@ -27,15 +27,36 @@ def _ticket() -> Ticket:
 def _proposal(evidence_refs: list[str]) -> ResolutionProposal:
     return ResolutionProposal(
         ticket_id="ticket-001",
+        reply_text="We submitted your refund request.",
         evidence_refs=evidence_refs,
         actions=[
             ActionProposal(
                 action_type="CREATE_REFUND_REQUEST",
-                params={"order_id": "order-100", "amount": "29.00", "currency": "USD"},
+                parameters={"order_id": "order-100", "amount": "29.00", "currency": "USD"},
+                reason="A verified duplicate charge may enter refund review.",
+                evidence_refs=evidence_refs,
+                risk_level="medium",
             ),
-            ActionProposal(action_type="SEND_REPLY", params={"message": "We submitted your refund request."}),
+            ActionProposal(
+                action_type="SEND_REPLY",
+                parameters={"message": "We submitted your refund request."},
+                reason="The customer needs the request status.",
+                evidence_refs=evidence_refs,
+                risk_level="low",
+            ),
         ],
+        uncertainties=[],
         created_at=datetime(2026, 8, 31, tzinfo=UTC),
+    )
+
+
+def _review(*, decision: str = "pass", explanation: str = "Evidence review completed.") -> RiskReview:
+    return RiskReview(
+        decision=decision,
+        risk_flags=[],
+        unsupported_claims=[],
+        required_changes=[],
+        explanation=explanation,
     )
 
 
@@ -84,7 +105,7 @@ def test_gate_allows_reviewed_evidence_backed_refund_request() -> None:
                 "policy-refund-request-002",
             ]
         ),
-        RiskReview(escalated=False, rationale="Evidence supports a simulated refund request."),
+        _review(explanation="Evidence supports a simulated refund request."),
     )
 
     assert decision.outcome == "allow"
@@ -96,7 +117,7 @@ def test_gate_blocks_missing_evidence_reference() -> None:
         _ticket(),
         _evidence(),
         _proposal(["missing-evidence"]),
-        RiskReview(escalated=False, rationale="Evidence review completed."),
+        _review(),
     )
 
     assert decision.outcome == "block"
@@ -121,7 +142,7 @@ def test_gate_blocks_active_but_irrelevant_evidence_for_duplicate_charge_refund(
         _ticket(),
         evidence,
         _proposal(["policy-password-reset-001"]),
-        RiskReview(escalated=False, rationale="Review completed."),
+        _review(explanation="Review completed."),
     )
 
     assert decision.outcome == "block"
@@ -139,7 +160,7 @@ def test_gate_escalates_inactive_evidence_instead_of_treating_it_as_executable()
                 "policy-refund-request-002",
             ]
         ),
-        RiskReview(escalated=False, rationale="The expired rule is retained for audit."),
+        _review(explanation="The expired rule is retained for audit."),
     )
 
     assert decision.outcome == "escalate"
@@ -176,7 +197,7 @@ def test_gate_escalates_unresolved_eligibility_and_exclusion_conflict() -> None:
         _ticket(),
         evidence,
         _proposal([item.evidence_id for item in evidence.items]),
-        RiskReview(escalated=False, rationale="The exclusion has not been resolved."),
+        _review(explanation="The exclusion has not been resolved."),
     )
 
     assert decision.outcome == "escalate"

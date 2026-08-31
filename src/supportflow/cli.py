@@ -35,7 +35,7 @@ def _golden_ticket() -> Ticket:
 def demo_golden(model_adapter: str = "fake") -> None:
     ticket = _golden_ticket()
     model = OpenAICompatibleStructuredModel() if model_adapter == "openai" else None
-    service = SupportFlowService.demo(use_sentence_transformer=True, model=model)
+    service = SupportFlowService.demo(use_sentence_transformer=False, model=model)
     waiting = service.submit(ticket)
     completed = service.approve(waiting.run_id, waiting.proposal.proposal_hash, "portfolio-owner")
     print(f"run_id: {completed.run_id}")
@@ -44,6 +44,7 @@ def demo_golden(model_adapter: str = "fake") -> None:
     print(f"approval: {completed.approval.reviewer}")
     print(f"final_state: {completed.current_state.value}")
     print(f"model_adapter: {model.__class__.__name__ if model else 'FakeStructuredModel'}")
+    print("embedding_adapter: FixedEmbeddingProvider")
     print("simulated_actions: " + ", ".join(f"{item.action_type.value}={item.status}" for item in completed.execution_results))
 
 

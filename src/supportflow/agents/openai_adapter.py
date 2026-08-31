@@ -21,12 +21,23 @@ class ProviderDTO(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class TriageFactOutput(ProviderDTO):
+    key: str
+    value: str
+
+
 class TriageOutput(ProviderDTO):
     ticket_id: str
-    intent: Literal["DUPLICATE_CHARGE"]
+    intent: Literal[
+        "BILLING_QUESTION", "REFUND_REQUEST", "DUPLICATE_CHARGE", "REFUND_STATUS"
+    ]
     confidence: float
     rationale: str
-    missing_fields: list[str]
+    urgency: Literal["low", "medium", "high"]
+    extracted_facts: list[TriageFactOutput]
+    missing_information: list[str]
+    risk_flags: list[str]
+    route: Literal["continue", "request_information", "escalate_human"]
 
 
 class ResolutionActionOutput(ProviderDTO):
@@ -37,18 +48,29 @@ class ResolutionActionOutput(ProviderDTO):
     amount: str
     currency: str
     message: str
+    tag: str
+    queue: str
+    summary: str
+    reason: str
+    evidence_refs: list[str]
+    risk_level: Literal["low", "medium", "high"]
 
 
 class ResolutionOutput(ProviderDTO):
     ticket_id: str
+    reply_text: str
     evidence_refs: list[str]
     actions: list[ResolutionActionOutput]
+    uncertainties: list[str]
     created_at: str
 
 
 class RiskReviewOutput(ProviderDTO):
-    escalated: bool
-    rationale: str
+    decision: Literal["pass", "revise", "escalate"]
+    risk_flags: list[str]
+    unsupported_claims: list[str]
+    required_changes: list[str]
+    explanation: str
 
 
 OUTPUT_DTOS: dict[type[ModelOutput], type[ProviderDTO]] = {
@@ -139,6 +161,19 @@ class OpenAICompatibleStructuredModel:
             dto = dto_type.model_validate(payload)
         except ValidationError as error:
             raise InvalidStructuredOutput("provider response did not match the requested schema") from error
+        if output_type is TriageResult:
+            triage = TriageOutput.model_validate(dto)
+            return TriageResult(
+                ticket_id=triage.ticket_id,
+                intent=triage.intent,
+                confidence=triage.confidence,
+                rationale=triage.rationale,
+                urgency=triage.urgency,
+                extracted_facts={item.key: item.value for item in triage.extracted_facts},
+                missing_information=triage.missing_information,
+                risk_flags=triage.risk_flags,
+                route=triage.route,
+            )
         if output_type is ResolutionProposal:
             return OpenAICompatibleStructuredModel._resolution_from_dto(dto)
         return output_type.model_validate(dto.model_dump(mode="json"))
@@ -154,26 +189,67 @@ class OpenAICompatibleStructuredModel:
                 actions.append(
                     {
                         "action_type": action.action_type,
-                        "params": {
+                        "parameters": {
                             "order_id": action.order_id,
                             "amount": action.amount,
                             "currency": action.currency,
                         },
+                        "reason": action.reason,
+                        "evidence_refs": action.evidence_refs,
+                        "risk_level": action.risk_level,
                     }
                 )
             elif action.action_type == "SEND_REPLY":
                 if not action.message:
                     raise InvalidAction("provider response proposed an empty reply action")
                 actions.append(
-                    {"action_type": action.action_type, "params": {"message": action.message}}
+                    {
+                        "action_type": action.action_type,
+                        "parameters": {"message": action.message},
+                        "reason": action.reason,
+                        "evidence_refs": action.evidence_refs,
+                        "risk_level": action.risk_level,
+                    }
+                )
+            elif action.action_type == "ADD_TAG":
+                actions.append(
+                    {
+                        "action_type": action.action_type,
+                        "parameters": {"tag": action.tag},
+                        "reason": action.reason,
+                        "evidence_refs": action.evidence_refs,
+                        "risk_level": action.risk_level,
+                    }
+                )
+            elif action.action_type == "REQUEST_INFORMATION":
+                actions.append(
+                    {
+                        "action_type": action.action_type,
+                        "parameters": {"message": action.message},
+                        "reason": action.reason,
+                        "evidence_refs": action.evidence_refs,
+                        "risk_level": action.risk_level,
+                    }
+                )
+            elif action.action_type == "ESCALATE_HUMAN":
+                actions.append(
+                    {
+                        "action_type": action.action_type,
+                        "parameters": {"queue": action.queue, "summary": action.summary},
+                        "reason": action.reason,
+                        "evidence_refs": action.evidence_refs,
+                        "risk_level": action.risk_level,
+                    }
                 )
             else:
                 raise InvalidAction("provider response proposed an unsupported action")
         try:
             return ResolutionProposal(
                 ticket_id=resolution.ticket_id,
+                reply_text=resolution.reply_text,
                 evidence_refs=resolution.evidence_refs,
                 actions=actions,
+                uncertainties=resolution.uncertainties,
                 created_at=resolution.created_at,
             )
         except ValidationError as error:

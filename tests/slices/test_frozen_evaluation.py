@@ -50,6 +50,13 @@ def test_frozen_dataset_runs_complete_workflow(tmp_path, service_factory) -> Non
         "policy_conflict": 4,
         "duplicate_submission": 4,
     }
+    assert {row["expected_intent"] for row in rows} == {
+        "BILLING_QUESTION",
+        "REFUND_REQUEST",
+        "DUPLICATE_CHARGE",
+        "REFUND_STATUS",
+    }
+    assert all("expected_actions" in row for row in rows)
 
     summary = run_evaluation(Path("data/eval/tickets.jsonl"), service_factory, tmp_path)
 
@@ -58,6 +65,14 @@ def test_frozen_dataset_runs_complete_workflow(tmp_path, service_factory) -> Non
     assert summary.recovery_failure_count == 0
     assert (tmp_path / f"eval-{summary.evaluation_input_sha256}.json").exists()
     assert (tmp_path / f"eval-{summary.evaluation_input_sha256}.md").exists()
+    payload = json.loads(
+        (tmp_path / f"eval-{summary.evaluation_input_sha256}.json").read_text()
+    )
+    assert all(
+        case["observed"]["duplicate_intake_reused"]
+        for case in payload["cases"]
+        if case["case_id"].startswith("duplicate-")
+    )
 
 
 def test_cli_evaluate_runs_the_same_frozen_journey(tmp_path) -> None:
@@ -148,6 +163,28 @@ def test_forbidden_proposed_action_lowers_action_accuracy_even_when_rejected(
     rejected["forbidden_actions"] = ["CREATE_REFUND_REQUEST", "SEND_REPLY"]
     summary = run_evaluation(
         _write_dataset(tmp_path / "forbidden.jsonl", rows), service_factory, tmp_path / "output", Path("data/policies")
+    )
+
+    assert summary.action_accuracy < 1.0
+
+
+def test_action_scoring_detects_parameter_and_multiplicity_mismatches(
+    tmp_path, service_factory
+) -> None:
+    """Catches set-only scoring that ignores wrong parameters or duplicate actions."""
+    from supportflow.eval.runner import run_evaluation
+
+    rows = [json.loads(line) for line in Path("data/eval/tickets.jsonl").read_text().splitlines()]
+    target = next(row for row in rows if row["case_id"] == "refund-01")
+    baseline_expectations = deepcopy(target["expected_actions"])
+    target["expected_actions"][0]["parameters"]["amount"] = "999.00"
+    target["expected_actions"].append(deepcopy(baseline_expectations[-1]))
+
+    summary = run_evaluation(
+        _write_dataset(tmp_path / "action-mismatch" / "tickets.jsonl", rows),
+        service_factory,
+        tmp_path / "output",
+        Path("data/policies"),
     )
 
     assert summary.action_accuracy < 1.0
@@ -253,7 +290,7 @@ def test_model_fixture_change_gets_a_new_combined_evaluation_artifact_id(tmp_pat
     dataset = _write_dataset(tmp_path / "changed" / "tickets.jsonl", rows)
     fixture_path = dataset.parent / "model_fixtures.json"
     fixture = json.loads(fixture_path.read_text())
-    fixture["profiles"]["normal"]["fixture_note"] = "identity-change-only"
+    fixture["profiles"]["billing_question"]["fixture_note"] = "identity-change-only"
     fixture_path.write_text(json.dumps(fixture), encoding="utf-8")
     changed = run_evaluation(dataset, service_factory, tmp_path / "changed-output", Path("data/policies"))
 

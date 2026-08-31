@@ -43,3 +43,31 @@ def test_ui_never_bypasses_application_service() -> None:
     assert "sqlite3.connect" not in source
     assert "SimulatedExecutor(" not in source
     assert "SupportFlowService" in source
+
+
+def test_workbench_runtime_is_durable_and_can_reopen_a_run(
+    tmp_path, monkeypatch, duplicate_ticket
+) -> None:
+    from supportflow.ui.app import build_workbench_service
+
+    monkeypatch.setenv("LANGGRAPH_STRICT_MSGPACK", "true")
+    runtime = tmp_path / "workbench"
+    waiting = build_workbench_service(runtime).submit(duplicate_ticket)
+    reopened = build_workbench_service(runtime).resume(waiting.run_id)
+
+    assert reopened.run_id == waiting.run_id
+    assert reopened.current_state == "WAITING_APPROVAL"
+    assert reopened.node_attempts == waiting.node_attempts
+
+
+def test_terminal_workbench_explains_that_no_human_actions_remain(
+    durable_service, duplicate_ticket
+) -> None:
+    from supportflow.ui.app import available_actions_message, build_view_model
+
+    waiting = durable_service.submit(duplicate_ticket)
+    terminal = durable_service.reject(waiting.run_id, "Reviewed.", "owner")
+    view = build_view_model(terminal)
+
+    assert view.available_actions == ()
+    assert available_actions_message(view) == "No human actions are available in REJECTED."

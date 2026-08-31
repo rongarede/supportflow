@@ -67,7 +67,8 @@ def _load_cases(dataset_path: Path) -> list[dict[str, Any]]:
     required = {
         "case_id", "source_id", "source_row_or_pattern", "rewrite_note", "case_type",
         "ticket", "expected_intent", "required_evidence_ids", "allowed_actions",
-        "forbidden_actions", "expected_terminal_state", "human_action", "risk_flags",
+        "forbidden_actions", "expected_actions", "expected_terminal_state", "human_action",
+        "risk_flags", "input_revision",
     }
     if len(cases) != 30 or Counter(case.get("case_type") for case in cases) != _EXPECTED_DISTRIBUTION:
         raise ValueError("Frozen evaluation dataset must contain the specified 30-case distribution")
@@ -106,34 +107,57 @@ def _configure_case_model(
     profile = fixtures["profiles"][profile_name]
     current = datetime(2026, 8, 31, tzinfo=UTC)
     evidence_by_heading = {chunk.heading: chunk.evidence_id for chunk in index.chunks if chunk.document.active_at(current)}
+    triage = profile["triage"]
     model.responses[("triage", ticket.ticket_id, 1)] = TriageResult(
         ticket_id=ticket.ticket_id,
-        intent="DUPLICATE_CHARGE",
-        confidence=0.99,
-        rationale="Deterministic frozen evaluation fixture.",
-        missing_fields=profile["missing_fields"],
+        intent=triage["intent"],
+        confidence=triage["confidence"],
+        rationale=triage["rationale"],
+        urgency=triage["urgency"],
+        extracted_facts={
+            field: getattr(ticket, field) for field in triage["extracted_fact_fields"]
+        },
+        missing_information=triage["missing_information"],
+        risk_flags=triage["risk_flags"],
+        route=triage["route"],
     )
-    if profile["missing_fields"]:
+    if triage["missing_information"]:
         return
+
+    def resolve_parameters(parameters: dict[str, Any]) -> dict[str, Any]:
+        replacements = {
+            "$order_id": ticket.order_id,
+            "$amount": ticket.amount,
+            "$currency": ticket.currency,
+        }
+        return {key: replacements.get(value, value) for key, value in parameters.items()}
+
+    proposal_fixture = profile["proposal"]
     evidence_refs = [evidence_by_heading[heading] for heading in profile["evidence_headings"]]
     model.responses[("resolution", ticket.ticket_id, 1)] = ResolutionProposal(
         ticket_id=ticket.ticket_id,
+        reply_text=proposal_fixture["reply_text"],
         evidence_refs=evidence_refs,
         actions=[
             ActionProposal(
-                action_type="CREATE_REFUND_REQUEST",
-                params={"order_id": ticket.order_id, "amount": ticket.amount, "currency": ticket.currency},
-            ),
-            ActionProposal(
-                action_type="SEND_REPLY",
-                params={"message": "A fictional duplicate-charge request was recorded for review."},
-            ),
+                action_type=action["action_type"],
+                parameters=resolve_parameters(action["parameters"]),
+                reason=action["reason"],
+                evidence_refs=[evidence_by_heading[heading] for heading in action["evidence_headings"]],
+                risk_level=action["risk_level"],
+            )
+            for action in proposal_fixture["actions"]
         ],
+        uncertainties=proposal_fixture["uncertainties"],
         created_at=current,
     )
+    review = profile["review"]
     model.responses[("reviewer", ticket.ticket_id, 1)] = RiskReview(
-        escalated=False,
-        rationale="Deterministic frozen evaluation review.",
+        decision=review["decision"],
+        risk_flags=review["risk_flags"],
+        unsupported_claims=review["unsupported_claims"],
+        required_changes=review["required_changes"],
+        explanation=review["explanation"],
     )
 
 
@@ -180,7 +204,9 @@ def _recovery_matches(expected: dict[str, Any], reopened: dict[str, Any]) -> boo
     return expected == reopened
 
 
-def _submit_with_partial_checkpoint(service: SupportFlowService, ticket: Ticket):
+def _submit_with_partial_checkpoint(
+    service: SupportFlowService, ticket: Ticket, input_revision: str
+):
     original = service.repository.record_node_result
     interrupted: dict[str, str] = {}
 
@@ -192,7 +218,7 @@ def _submit_with_partial_checkpoint(service: SupportFlowService, ticket: Ticket)
 
     service.repository.record_node_result = commit_then_interrupt
     try:
-        service.submit(ticket)
+        service.submit(ticket, input_revision=input_revision)
     except _EvaluationInterruption:
         return interrupted["run_id"]
     finally:
@@ -200,7 +226,15 @@ def _submit_with_partial_checkpoint(service: SupportFlowService, ticket: Ticket)
     raise AssertionError("Expected the frozen partial checkpoint interruption")
 
 
-def _score_case(case: dict[str, Any], initial, final, service: SupportFlowService, recovery: dict[str, Any]) -> dict[str, Any]:
+def _score_case(
+    case: dict[str, Any],
+    initial,
+    final,
+    service: SupportFlowService,
+    recovery: dict[str, Any],
+    *,
+    duplicate_intake_reused: bool,
+) -> dict[str, Any]:
     proposal = initial.proposal
     referenced = set(proposal.evidence_refs) if proposal is not None else set()
     available = [*initial.evidence.items, *initial.evidence.audit_items] if initial.evidence else []
@@ -211,15 +245,34 @@ def _score_case(case: dict[str, Any], initial, final, service: SupportFlowServic
         evidence_id in available_by_id and available_by_id[evidence_id].active
         for evidence_id in referenced
     )
-    proposed_actions = {action.action_type.value for action in proposal.actions} if proposal else set()
-    action_correct = proposed_actions <= set(case["allowed_actions"]) and not (
-        proposed_actions & set(case["forbidden_actions"])
+    proposed_action_records = [
+        {
+            "action_type": action.action_type.value,
+            "parameters": action.parameters,
+        }
+        for action in (proposal.actions if proposal else [])
+    ]
+    proposed_actions = [action["action_type"] for action in proposed_action_records]
+    canonical_actions = Counter(
+        json.dumps(action, sort_keys=True, separators=(",", ":"))
+        for action in proposed_action_records
+    )
+    expected_actions = Counter(
+        json.dumps(action, sort_keys=True, separators=(",", ":"))
+        for action in case["expected_actions"]
+    )
+    action_correct = canonical_actions == expected_actions and not (
+        set(proposed_actions) & set(case["forbidden_actions"])
     )
     unapproved = int(bool(final.execution_results) and final.approval is None)
     duplicate_side_effects = 0
     if case["human_action"] == "approve_replay":
         duplicate_side_effects = sum(result.status != "skipped_duplicate" for result in final.execution_results)
-        duplicate_side_effects += max(0, service.repository.count_execution_side_effects() - 2)
+        duplicate_side_effects += max(
+            0,
+            service.repository.count_execution_side_effects()
+            - len(case["expected_actions"]),
+        )
     return {
         "case_id": case["case_id"],
         "route_correct": bool(initial.triage) and initial.triage.intent.value == case["expected_intent"],
@@ -235,15 +288,21 @@ def _score_case(case: dict[str, Any], initial, final, service: SupportFlowServic
         "observed": {
             "route": initial.triage.intent.value if initial.triage else None,
             "evidence_ids": sorted(referenced),
-            "proposed_actions": sorted(proposed_actions),
+            "proposed_actions": proposed_action_records,
             "terminal_state": final.current_state.value,
             "trace_stages": [event.stage for event in final.trace],
             "trace_count": len(final.trace),
+            "duplicate_intake_reused": duplicate_intake_reused,
         },
         "expected_vs_observed": {
             "intent": {"expected": case["expected_intent"], "observed": initial.triage.intent.value if initial.triage else None},
             "required_evidence_ids": {"expected": sorted(required), "observed": sorted(referenced)},
-            "proposed_actions": {"allowed": sorted(case["allowed_actions"]), "forbidden": sorted(case["forbidden_actions"]), "observed": sorted(proposed_actions)},
+            "proposed_actions": {
+                "expected": case["expected_actions"],
+                "allowed": sorted(case["allowed_actions"]),
+                "forbidden": sorted(case["forbidden_actions"]),
+                "observed": proposed_action_records,
+            },
             "terminal_state": {"expected": case["expected_terminal_state"], "observed": final.current_state.value},
         },
     }
@@ -277,7 +336,9 @@ def run_evaluation(
             control = service_factory(shared_index=shared_index, runtime_directory=runtime_root / f"{case['case_id']}-control")
             control.graph.retriever = shared_index
             _configure_case_model(control, ticket, fixtures, shared_index)
-            control_snapshot = control.submit(ticket)
+            control_snapshot = control.submit(
+                ticket, input_revision=case["input_revision"]
+            )
             service = service_factory(shared_index=shared_index, runtime_directory=runtime_directory)
             if service._checkpoint_connection is None:
                 raise RuntimeError("Frozen evaluation requires a durable service runtime")
@@ -293,11 +354,21 @@ def run_evaluation(
                 raise RuntimeError("Frozen evaluation adapter provenance changed between cases")
             interrupted = case["case_id"] == "billing-01"
             if interrupted:
-                run_id = _submit_with_partial_checkpoint(service, ticket)
+                run_id = _submit_with_partial_checkpoint(
+                    service, ticket, case["input_revision"]
+                )
                 initial = None
             else:
-                initial = service.submit(ticket)
+                initial = service.submit(
+                    ticket, input_revision=case["input_revision"]
+                )
                 run_id = initial.run_id
+            duplicate_intake_reused = True
+            if case["case_type"] == "duplicate_submission":
+                duplicate = service.submit(
+                    ticket, input_revision=case["input_revision"]
+                )
+                duplicate_intake_reused = duplicate.run_id == run_id
             reopened = service_factory(shared_index=shared_index, runtime_directory=runtime_directory)
             reopened.graph.retriever = shared_index
             _configure_case_model(reopened, ticket, fixtures, shared_index)
@@ -319,7 +390,16 @@ def run_evaluation(
                 "side_effect_count": observed_signature["side_effect_count"],
             }
             final = _drive_expected_human_action(reopened, recovered, case)
-            results.append(_score_case(case, initial, final, reopened, recovery))
+            results.append(
+                _score_case(
+                    case,
+                    initial,
+                    final,
+                    reopened,
+                    recovery,
+                    duplicate_intake_reused=duplicate_intake_reused,
+                )
+            )
     case_count = len(results)
     evidence_total = sum(result["required_evidence_total"] for result in results)
     summary = EvaluationSummary(

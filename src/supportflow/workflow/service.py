@@ -4,7 +4,7 @@ import os
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
-from uuid import uuid4
+from uuid import NAMESPACE_URL, uuid5
 
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -15,7 +15,10 @@ from supportflow.agents.protocols import StructuredModel
 from supportflow.agents.resolution import ResolutionAgent
 from supportflow.agents.reviewer import RiskReviewerAgent
 from supportflow.agents.triage import TriageAgent
-from supportflow.domain.hashing import proposal_hash as canonical_proposal_hash
+from supportflow.domain.hashing import (
+    canonical_input_revision,
+    proposal_hash as canonical_proposal_hash,
+)
 from supportflow.domain.models import (
     ActionProposal,
     ApprovalInput,
@@ -142,38 +145,67 @@ class SupportFlowService:
                     intent="DUPLICATE_CHARGE",
                     confidence=0.99,
                     rationale="The customer describes a duplicate charge for one order.",
+                    urgency="medium",
+                    extracted_facts={
+                        "order_id": "order-100",
+                        "amount": "29.00",
+                        "currency": "USD",
+                    },
+                    missing_information=[],
+                    risk_flags=[],
+                    route="continue",
                 ),
                 ("resolution", sample_ticket_id, 1): ResolutionProposal(
                     ticket_id=sample_ticket_id,
+                    reply_text="We verified the duplicate charge and submitted a refund request.",
                     evidence_refs=duplicate_charge_refs,
                     actions=[
                         ActionProposal(
                             action_type="CREATE_REFUND_REQUEST",
-                            params={"order_id": "order-100", "amount": "29.00", "currency": "USD"},
+                            parameters={"order_id": "order-100", "amount": "29.00", "currency": "USD"},
+                            reason="The duplicate-charge policy permits a refund request after verification.",
+                            evidence_refs=duplicate_charge_refs[:2],
+                            risk_level="medium",
                         ),
                         ActionProposal(
                             action_type="SEND_REPLY",
-                            params={"message": "We verified the duplicate charge and submitted a refund request."},
+                            parameters={"message": "We verified the duplicate charge and submitted a refund request."},
+                            reason="The customer needs the bounded request status and timing.",
+                            evidence_refs=duplicate_charge_refs,
+                            risk_level="low",
                         ),
                     ],
+                    uncertainties=[],
                     created_at=current,
                 ),
                 ("reviewer", sample_ticket_id, 1): RiskReview(
-                    escalated=False,
-                    rationale="The proposed simulated actions are constrained to active billing policies.",
+                    decision="pass",
+                    risk_flags=[],
+                    unsupported_claims=[],
+                    required_changes=[],
+                    explanation="The proposed simulated actions are constrained to active billing policies.",
                 ),
                 ("triage", "T-MISSING-001", 1): TriageResult(
                     ticket_id="T-MISSING-001",
                     intent="DUPLICATE_CHARGE",
                     confidence=0.99,
                     rationale="The order details needed for a payment investigation are incomplete.",
-                    missing_fields=["payment provider failure details"],
+                    urgency="low",
+                    extracted_facts={"order_id": "order-100"},
+                    missing_information=["payment provider failure details"],
+                    risk_flags=["missing_information"],
+                    route="request_information",
                 ),
                 ("triage", "T-CONFLICT-001", 1): TriageResult(
                     ticket_id="T-CONFLICT-001",
                     intent="DUPLICATE_CHARGE",
                     confidence=0.99,
                     rationale="The ticket describes a duplicate charge with an unresolved exclusion.",
+                    urgency="high",
+                    extracted_facts={"order_id": "order-100"},
+                    missing_information=[],
+                    risk_flags=["policy_conflict"],
+                    route="continue",
                 ),
                 ("resolution", "T-CONFLICT-001", 1): ResolutionProposal(
                     ticket_id="T-CONFLICT-001",
@@ -182,46 +214,87 @@ class SupportFlowService:
                         evidence_ids_by_heading["refund-eligibility"],
                         evidence_ids_by_heading["refund-exclusion"],
                     ],
+                    reply_text="We are reviewing the request.",
                     actions=[
                         ActionProposal(
                             action_type="CREATE_REFUND_REQUEST",
-                            params={"order_id": "order-100", "amount": "29.00", "currency": "USD"},
+                            parameters={"order_id": "order-100", "amount": "29.00", "currency": "USD"},
+                            reason="The request may be eligible, but a policy conflict remains.",
+                            evidence_refs=[
+                                evidence_ids_by_heading["refund-eligibility"],
+                                evidence_ids_by_heading["refund-exclusion"],
+                            ],
+                            risk_level="high",
                         ),
-                        ActionProposal(action_type="SEND_REPLY", params={"message": "We are reviewing the request."}),
+                        ActionProposal(
+                            action_type="SEND_REPLY",
+                            parameters={"message": "We are reviewing the request."},
+                            reason="Do not promise an outcome while policy evidence conflicts.",
+                            evidence_refs=[evidence_ids_by_heading["refund-timing"]],
+                            risk_level="medium",
+                        ),
                     ],
+                    uncertainties=["Refund eligibility conflicts with an active exclusion."],
                     created_at=current,
                 ),
                 ("reviewer", "T-CONFLICT-001", 1): RiskReview(
-                    escalated=False,
-                    rationale="Eligibility and exclusion evidence conflict and need human resolution.",
+                    decision="revise",
+                    risk_flags=["policy_conflict"],
+                    unsupported_claims=[],
+                    required_changes=["Escalate the conflicting eligibility decision."],
+                    explanation="Eligibility and exclusion evidence conflict and need human resolution.",
                 ),
                 ("triage", "T-RISK-001", 1): TriageResult(
                     ticket_id="T-RISK-001",
                     intent="DUPLICATE_CHARGE",
                     confidence=0.99,
                     rationale="The ticket describes a duplicate charge with a risk indicator.",
+                    urgency="high",
+                    extracted_facts={"order_id": "order-100"},
+                    missing_information=[],
+                    risk_flags=["account_takeover"],
+                    route="continue",
                 ),
                 ("resolution", "T-RISK-001", 1): ResolutionProposal(
                     ticket_id="T-RISK-001",
+                    reply_text="We are reviewing the request.",
                     evidence_refs=duplicate_charge_refs,
                     actions=[
                         ActionProposal(
                             action_type="CREATE_REFUND_REQUEST",
-                            params={"order_id": "order-100", "amount": "29.00", "currency": "USD"},
+                            parameters={"order_id": "order-100", "amount": "29.00", "currency": "USD"},
+                            reason="The duplicate-charge path would normally allow a request.",
+                            evidence_refs=duplicate_charge_refs[:2],
+                            risk_level="high",
                         ),
-                        ActionProposal(action_type="SEND_REPLY", params={"message": "We are reviewing the request."}),
+                        ActionProposal(
+                            action_type="SEND_REPLY",
+                            parameters={"message": "We are reviewing the request."},
+                            reason="Avoid an unsupported outcome promise during risk review.",
+                            evidence_refs=[duplicate_charge_refs[-1]],
+                            risk_level="medium",
+                        ),
                     ],
+                    uncertainties=["Account ownership has not been verified."],
                     created_at=current,
                 ),
                 ("reviewer", "T-RISK-001", 1): RiskReview(
-                    escalated=True,
-                    rationale="Potential account takeover requires a human investigator.",
+                    decision="escalate",
+                    risk_flags=["account_takeover"],
+                    unsupported_claims=[],
+                    required_changes=["Route to a human investigator before any action."],
+                    explanation="Potential account takeover requires a human investigator.",
                 ),
                 ("triage", "T-EXPIRED-001", 1): TriageResult(
                     ticket_id="T-EXPIRED-001",
                     intent="DUPLICATE_CHARGE",
                     confidence=0.99,
                     rationale="The ticket cites a previously applicable duplicate-charge rule.",
+                    urgency="medium",
+                    extracted_facts={"order_id": "order-100"},
+                    missing_information=[],
+                    risk_flags=["expired_policy"],
+                    route="continue",
                 ),
                 ("resolution", "T-EXPIRED-001", 1): ResolutionProposal(
                     ticket_id="T-EXPIRED-001",
@@ -230,18 +303,35 @@ class SupportFlowService:
                         audit_evidence_ids_by_heading["duplicate-charge-refund-request"],
                         evidence_ids_by_heading["refund-timing"],
                     ],
+                    reply_text="We are reviewing the request.",
                     actions=[
                         ActionProposal(
                             action_type="CREATE_REFUND_REQUEST",
-                            params={"order_id": "order-100", "amount": "29.00", "currency": "USD"},
+                            parameters={"order_id": "order-100", "amount": "29.00", "currency": "USD"},
+                            reason="The cited historical policy described this request path.",
+                            evidence_refs=[
+                                evidence_ids_by_heading["duplicate-charge-verification"],
+                                audit_evidence_ids_by_heading["duplicate-charge-refund-request"],
+                            ],
+                            risk_level="high",
                         ),
-                        ActionProposal(action_type="SEND_REPLY", params={"message": "We are reviewing the request."}),
+                        ActionProposal(
+                            action_type="SEND_REPLY",
+                            parameters={"message": "We are reviewing the request."},
+                            reason="The customer may only receive a noncommittal status.",
+                            evidence_refs=[evidence_ids_by_heading["refund-timing"]],
+                            risk_level="medium",
+                        ),
                     ],
+                    uncertainties=["The cited refund-request policy version is inactive."],
                     created_at=current,
                 ),
                 ("reviewer", "T-EXPIRED-001", 1): RiskReview(
-                    escalated=False,
-                    rationale="The cited refund rule has expired and needs a human decision.",
+                    decision="revise",
+                    risk_flags=["expired_policy"],
+                    unsupported_claims=[],
+                    required_changes=["Use an active policy or escalate."],
+                    explanation="The cited refund rule has expired and needs a human decision.",
                 ),
                 }
             )
@@ -298,14 +388,35 @@ class SupportFlowService:
             approval=values.get("approval"),
             approvals=values.get("approvals", []),
             execution_results=values.get("execution_results", []),
-            trace=values.get("trace", []),
-            errors=values.get("errors", []),
+            trace=self.repository.trace.list_for_run(run_id),
+            errors=(
+                self.repository.list_run_errors(run_id)
+                or values.get("errors", [])
+            ),
             node_attempts=self.repository.node_attempts(run_id),
         )
 
-    def submit(self, ticket: Ticket) -> RunSnapshot:
-        run_id = str(uuid4())
-        self.repository.create_run(run_id, ticket)
+    def submit(
+        self,
+        ticket: Ticket,
+        *,
+        input_revision: str | None = None,
+        source: str = "supportflow",
+    ) -> RunSnapshot:
+        revision = input_revision.strip() if input_revision is not None else canonical_input_revision(ticket)
+        if not revision:
+            raise ValueError("input_revision must not be empty")
+        run_id = str(
+            uuid5(NAMESPACE_URL, f"supportflow:{ticket.ticket_id}:{revision}")
+        )
+        persisted_run_id = self.repository.create_run(
+            run_id,
+            ticket,
+            source=source,
+            input_revision=revision,
+        )
+        if persisted_run_id != run_id:
+            return self.resume(persisted_run_id)
         self.graph.compiled.invoke({"run_id": run_id, "ticket": ticket, "trace": []}, self._config(run_id))
         snapshot = self._snapshot(run_id)
         self.repository.mark_run_state(snapshot.run_id, snapshot.current_state.value)
@@ -349,16 +460,21 @@ class SupportFlowService:
         revised_actions = [
             ActionProposal(
                 action_type=action.action_type,
-                params={**action.params, "message": reply_text}
+                parameters={**action.parameters, "message": reply_text}
                 if action.action_type == "SEND_REPLY"
-                else action.params,
+                else action.parameters,
+                reason=action.reason,
+                evidence_refs=action.evidence_refs,
+                risk_level=action.risk_level,
             )
             for action in waiting.proposal.actions
         ]
         revised = ResolutionProposal(
             ticket_id=waiting.proposal.ticket_id,
+            reply_text=reply_text,
             evidence_refs=waiting.proposal.evidence_refs,
             actions=revised_actions,
+            uncertainties=waiting.proposal.uncertainties,
             created_at=waiting.proposal.created_at,
         )
         if revised.proposal_hash == waiting.proposal.proposal_hash:
@@ -403,11 +519,12 @@ class SupportFlowService:
         config = self._config(run_id)
         checkpoint = self.graph.compiled.get_state(config)
         recoverable_nodes = {"triage", "retrieve", "resolve", "review", "policy"}
-        if any(
+        should_resume = "execute" in checkpoint.next or any(
             node_name in recoverable_nodes
             and self.repository.load_node_result(run_id, node_name) is not None
             for node_name in checkpoint.next
-        ):
+        )
+        if should_resume:
             self.graph.compiled.invoke(None, config)
         snapshot = self._snapshot(run_id)
         self.repository.mark_run_state(snapshot.run_id, snapshot.current_state.value)

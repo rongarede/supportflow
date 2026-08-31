@@ -46,6 +46,28 @@ CREATE TABLE IF NOT EXISTS model_attempts (
     PRIMARY KEY (run_id, node_name)
 );
 
+CREATE TABLE IF NOT EXISTS operation_attempts (
+    run_id TEXT NOT NULL,
+    operation_key TEXT NOT NULL,
+    attempts INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    last_error_type TEXT,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (run_id, operation_key)
+);
+
+CREATE TABLE IF NOT EXISTS run_errors (
+    error_id TEXT PRIMARY KEY,
+    run_id TEXT NOT NULL,
+    stage TEXT NOT NULL,
+    error_type TEXT NOT NULL,
+    message TEXT NOT NULL,
+    attempt INTEGER NOT NULL,
+    retryable INTEGER NOT NULL,
+    occurred_at TEXT NOT NULL,
+    error_json TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS approvals (
     approval_id TEXT PRIMARY KEY,
     run_id TEXT NOT NULL,

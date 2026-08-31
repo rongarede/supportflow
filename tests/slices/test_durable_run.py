@@ -61,6 +61,63 @@ def test_repeated_approval_is_idempotent_per_action(
     assert service.repository.count_execution_side_effects() == 2
 
 
+def test_duplicate_intake_reuses_the_same_run_in_process(
+    sqlite_service_factory, duplicate_ticket
+) -> None:
+    """Catches a random default revision that reruns every model-backed node."""
+    service = sqlite_service_factory()
+    first = service.submit(duplicate_ticket)
+    repeated = service.submit(duplicate_ticket)
+
+    assert repeated.run_id == first.run_id
+    assert repeated.node_attempts == first.node_attempts
+    assert [event.stage for event in repeated.trace] == [
+        "triage",
+        "retrieve",
+        "resolve",
+        "review",
+        "policy",
+    ]
+
+
+def test_duplicate_intake_reuses_the_same_run_after_reopen(
+    sqlite_service_factory, duplicate_ticket
+) -> None:
+    first = sqlite_service_factory().submit(duplicate_ticket, input_revision="source-v7")
+    reopened = sqlite_service_factory().submit(duplicate_ticket, input_revision="source-v7")
+
+    assert reopened.run_id == first.run_id
+    assert reopened.current_state == "WAITING_APPROVAL"
+    assert reopened.node_attempts == first.node_attempts
+
+
+def test_duplicate_completed_intake_does_not_repeat_side_effects(
+    sqlite_service_factory, duplicate_ticket
+) -> None:
+    service = sqlite_service_factory()
+    waiting = service.submit(duplicate_ticket)
+    completed = service.approve(
+        waiting.run_id, waiting.proposal.proposal_hash, "owner"
+    )
+    repeated = sqlite_service_factory().submit(duplicate_ticket)
+
+    assert repeated.run_id == completed.run_id
+    assert repeated.current_state == "COMPLETED"
+    assert service.repository.count_execution_side_effects() == 2
+
+
+def test_derived_input_revision_changes_only_when_ticket_input_changes(
+    sqlite_service_factory, duplicate_ticket
+) -> None:
+    service = sqlite_service_factory()
+    first = service.submit(duplicate_ticket)
+    changed = service.submit(
+        duplicate_ticket.model_copy(update={"body": "A corrected customer message."})
+    )
+
+    assert changed.run_id != first.run_id
+
+
 def test_restart_preserves_approval_and_execution_idempotency(
     sqlite_service_factory, duplicate_ticket
 ) -> None:

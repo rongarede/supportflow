@@ -3,13 +3,20 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from supportflow.evidence import build_manifest, canonical_sha256, hashed_record
+import pytest
+
+from supportflow.evidence import (
+    canonical_sha256,
+    generate_manifest_from_deterministic_run,
+    source_revision,
+)
 
 def test_committed_evidence_manifest_has_versioned_sanitized_hashes() -> None:
     """Catches portfolio evidence that points only at a mutable ignored runtime database."""
     manifest = json.loads(Path("artifacts/evidence-manifest-v1.json").read_text(encoding="utf-8"))
 
     assert manifest["manifest_version"] == "supportflow-evidence-manifest/v1"
+    assert manifest["source_revision"] == source_revision(Path.cwd())
     assert manifest["sanitized"] is True
     assert manifest["run"]["run_id"]
     assert set(manifest["records"]) == {
@@ -31,20 +38,30 @@ def test_committed_evidence_manifest_has_versioned_sanitized_hashes() -> None:
     assert manifest["evaluation_report"]["sha256"] == canonical_sha256(evaluation)
 
 
-def test_committed_manifest_is_rebuilt_by_the_deterministic_exporter() -> None:
-    """Catches a hand-authored manifest that cannot be reproduced by the exporter."""
+def test_committed_manifest_is_rebuilt_from_a_fresh_deterministic_run(
+    tmp_path, monkeypatch
+) -> None:
+    """Catches an exporter that copies the committed manifest instead of runtime evidence."""
+    monkeypatch.setenv("LANGGRAPH_STRICT_MSGPACK", "true")
     manifest = json.loads(Path("artifacts/evidence-manifest-v1.json").read_text(encoding="utf-8"))
-    evaluation = json.loads(Path(manifest["evaluation_report"]["path"]).read_text(encoding="utf-8"))
-
-    rebuilt = build_manifest(
-        source_revision=manifest["source_revision"],
-        run=manifest["run"],
-        records={
-            name: hashed_record(record["source"], record["payload"])
-            for name, record in manifest["records"].items()
-        },
-        evaluation_path=manifest["evaluation_report"]["path"],
-        evaluation_payload=evaluation,
+    rebuilt = generate_manifest_from_deterministic_run(
+        repo_root=Path.cwd(),
+        runtime_directory=tmp_path / "evidence-export",
+        evaluation_path=Path(manifest["evaluation_report"]["path"]),
+        supplied_source_revision=manifest["source_revision"],
     )
 
     assert rebuilt == manifest
+
+
+def test_export_rejects_a_source_revision_not_bound_to_the_executable_tree(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("LANGGRAPH_STRICT_MSGPACK", "true")
+    with pytest.raises(ValueError, match="does not match"):
+        generate_manifest_from_deterministic_run(
+            repo_root=Path.cwd(),
+            runtime_directory=tmp_path / "evidence-export",
+            evaluation_path=next(Path("artifacts").glob("eval-*.json")),
+            supplied_source_revision="supportflow-source-sha256:not-current",
+        )

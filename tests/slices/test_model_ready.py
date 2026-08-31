@@ -207,7 +207,7 @@ def test_openai_compatible_adapter_validates_structured_response_without_network
     class FakeCompletions:
         def create(self, **_kwargs):
             class Message:
-                content = '{"ticket_id":"ticket-duplicate-001","intent":"DUPLICATE_CHARGE","confidence":0.99,"rationale":"duplicate charge","missing_fields":[]}'
+                content = '{"ticket_id":"ticket-duplicate-001","intent":"DUPLICATE_CHARGE","confidence":0.99,"rationale":"duplicate charge","urgency":"medium","extracted_facts":[{"key":"order_id","value":"order-100"}],"missing_information":[],"risk_flags":[],"route":"continue"}'
 
             class Choice:
                 message = Message()
@@ -297,7 +297,7 @@ def test_openai_adapter_rejects_an_invalid_action_without_reclassifying_it_as_ma
     class FakeCompletions:
         def create(self, **_kwargs):
             class Message:
-                content = '{"ticket_id":"ticket-duplicate-001","evidence_refs":["policy-duplicate-charge-001"],"actions":[{"action_type":"DELETE_ACCOUNT","order_id":"","amount":"","currency":"","message":""}],"created_at":"2026-08-31T00:00:00Z"}'
+                content = '{"ticket_id":"ticket-duplicate-001","reply_text":"Unsafe action.","evidence_refs":["policy-duplicate-charge-001"],"actions":[{"action_type":"DELETE_ACCOUNT","order_id":"","amount":"","currency":"","message":"","tag":"","queue":"","summary":"","reason":"Unsupported action.","evidence_refs":["policy-duplicate-charge-001"],"risk_level":"high"}],"uncertainties":[],"created_at":"2026-08-31T00:00:00Z"}'
 
             class Choice:
                 message = Message()
@@ -332,9 +332,9 @@ def test_openai_adapter_passes_full_ticket_evidence_and_proposal_to_all_three_ca
             calls.append(kwargs)
             schema_name = kwargs["response_format"]["json_schema"]["name"]
             content_by_schema = {
-                "TriageOutput": '{"ticket_id":"ticket-duplicate-001","intent":"DUPLICATE_CHARGE","confidence":0.99,"rationale":"duplicate charge","missing_fields":[]}',
-                "ResolutionOutput": '{"ticket_id":"ticket-duplicate-001","evidence_refs":["policy-duplicate-charge-001","policy-refund-request-001","policy-refund-request-002"],"actions":[{"action_type":"CREATE_REFUND_REQUEST","order_id":"order-100","amount":"29.00","currency":"USD","message":""},{"action_type":"SEND_REPLY","order_id":"","amount":"","currency":"","message":"A refund request was created."}],"created_at":"2026-08-31T00:00:00Z"}',
-                "RiskReviewOutput": '{"escalated":false,"rationale":"Evidence and actions are constrained."}',
+                "TriageOutput": '{"ticket_id":"ticket-duplicate-001","intent":"DUPLICATE_CHARGE","confidence":0.99,"rationale":"duplicate charge","urgency":"medium","extracted_facts":[{"key":"order_id","value":"order-100"},{"key":"amount","value":"29.00"},{"key":"currency","value":"USD"}],"missing_information":[],"risk_flags":[],"route":"continue"}',
+                "ResolutionOutput": '{"ticket_id":"ticket-duplicate-001","reply_text":"A refund request was created.","evidence_refs":["policy-duplicate-charge-001","policy-refund-request-001","policy-refund-request-002"],"actions":[{"action_type":"CREATE_REFUND_REQUEST","order_id":"order-100","amount":"29.00","currency":"USD","message":"","tag":"","queue":"","summary":"","reason":"Verified duplicate charge.","evidence_refs":["policy-duplicate-charge-001","policy-refund-request-001"],"risk_level":"medium"},{"action_type":"SEND_REPLY","order_id":"","amount":"","currency":"","message":"A refund request was created.","tag":"","queue":"","summary":"","reason":"Share a bounded status.","evidence_refs":["policy-refund-request-002"],"risk_level":"low"}],"uncertainties":[],"created_at":"2026-08-31T00:00:00Z"}',
+                "RiskReviewOutput": '{"decision":"pass","risk_flags":[],"unsupported_claims":[],"required_changes":[],"explanation":"Evidence and actions are constrained."}',
             }
 
             class Message:

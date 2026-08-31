@@ -72,11 +72,15 @@ def write_reports(
             ]
     for result in results:
         observed = result["observed"]
+        action_summary = ", ".join(
+            f"{action['action_type']} {json.dumps(action['parameters'], sort_keys=True)}"
+            for action in observed["proposed_actions"]
+        )
         score_flags = ", ".join(
             key for key in ("route_correct", "citations_valid", "action_correct", "terminal_state_correct") if result[key]
         )
         lines.append(
-            f"| {result['case_id']} | {observed['route'] or '-'} | {', '.join(observed['evidence_ids']) or '-'} | {', '.join(observed['proposed_actions']) or '-'} | {observed['terminal_state']} | {score_flags or '-'} |"
+            f"| {result['case_id']} | {observed['route'] or '-'} | {', '.join(observed['evidence_ids']) or '-'} | {action_summary or '-'} | {observed['terminal_state']} | {score_flags or '-'} |"
         )
     markdown_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return json_path, markdown_path

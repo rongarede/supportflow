@@ -2,10 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+import os
+from pathlib import Path
 
 import streamlit as st
 
 from supportflow.domain.models import RunSnapshot, Ticket, TicketState
+from supportflow.settings import DEFAULT_RUNTIME_DIRECTORY
 from supportflow.workflow.service import SupportFlowService
 
 
@@ -137,10 +140,43 @@ def build_view_model(snapshot: RunSnapshot) -> WorkbenchViewModel:
     )
 
 
+def available_actions_message(view: WorkbenchViewModel) -> str:
+    if view.available_actions:
+        return "Available actions: " + ", ".join(
+            action.label for action in view.available_actions
+        )
+    return f"No human actions are available in {view.state}."
+
+
+def build_workbench_service(runtime_directory: Path) -> SupportFlowService:
+    """Open the dedicated durable runtime used by the Streamlit workbench."""
+    return SupportFlowService.demo(runtime_directory=runtime_directory)
+
+
 def _service() -> SupportFlowService:
     if "supportflow_service" not in st.session_state:
-        st.session_state.supportflow_service = SupportFlowService.demo()
+        os.environ.setdefault("LANGGRAPH_STRICT_MSGPACK", "true")
+        st.session_state.supportflow_service = build_workbench_service(
+            DEFAULT_RUNTIME_DIRECTORY / "workbench"
+        )
     return st.session_state.supportflow_service
+
+
+def _resume_form(service: SupportFlowService) -> None:
+    with st.form("resume-run-form"):
+        run_id = st.text_input("Existing run ID")
+        resume = st.form_submit_button("Reopen run")
+    if not resume or not run_id.strip():
+        return
+    try:
+        snapshot = service.resume(run_id.strip())
+    except KeyError as error:
+        st.error(str(error))
+        return
+    st.session_state.run_id = snapshot.run_id
+    st.session_state.displayed_proposal_hash = (
+        snapshot.proposal.proposal_hash if snapshot.proposal is not None else None
+    )
 
 
 def _ticket_form(service: SupportFlowService) -> None:
@@ -203,7 +239,7 @@ def _render_run(service: SupportFlowService, run_id: str) -> None:
         st.code(view.proposal_hash, language=None)
         for action in view.proposal_actions:
             st.write(action)
-        st.caption("Available actions: " + ", ".join(action.label for action in view.available_actions))
+        st.caption(available_actions_message(view))
         reply = next(
             (
                 action.params["message"]
@@ -260,6 +296,7 @@ def main() -> None:
     st.title("SupportFlow Workbench")
     st.caption("Submit, review, decide, and inspect a support run in one place.")
     service = _service()
+    _resume_form(service)
     _ticket_form(service)
     run_id = st.session_state.get("run_id")
     if run_id:

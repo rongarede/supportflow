@@ -111,9 +111,15 @@ def test_modification_rejects_proposal_without_editable_reply(
         intent="DUPLICATE_CHARGE",
         confidence=0.99,
         rationale="The ticket describes a duplicate charge.",
+        urgency="medium",
+        extracted_facts={"order_id": "order-100"},
+        missing_information=[],
+        risk_flags=[],
+        route="continue",
     )
     model.responses[("resolution", ticket_id, 1)] = ResolutionProposal(
         ticket_id=ticket_id,
+        reply_text="A refund request requires a customer-facing status update.",
         evidence_refs=[
             evidence_ids_by_heading["duplicate-charge-verification"],
             evidence_ids_by_heading["duplicate-charge-refund-request"],
@@ -121,14 +127,24 @@ def test_modification_rejects_proposal_without_editable_reply(
         actions=[
             ActionProposal(
                 action_type="CREATE_REFUND_REQUEST",
-                params={"order_id": "order-100", "amount": "29.00", "currency": "USD"},
+                parameters={"order_id": "order-100", "amount": "29.00", "currency": "USD"},
+                reason="Verified duplicate charges may enter refund review.",
+                evidence_refs=[
+                    evidence_ids_by_heading["duplicate-charge-verification"],
+                    evidence_ids_by_heading["duplicate-charge-refund-request"],
+                ],
+                risk_level="medium",
             )
         ],
+        uncertainties=[],
         created_at=datetime(2026, 8, 31, tzinfo=UTC),
     )
     model.responses[("reviewer", ticket_id, 1)] = RiskReview(
-        escalated=False,
-        rationale="The proposal is constrained to the active duplicate-charge rules.",
+        decision="pass",
+        risk_flags=[],
+        unsupported_claims=[],
+        required_changes=[],
+        explanation="The proposal is constrained to the active duplicate-charge rules.",
     )
     waiting = safety_service.submit(ticket_factory(ticket_id))
 
@@ -148,7 +164,7 @@ def test_rejection_and_escalation_never_execute(safety_service, duplicate_ticket
     assert rejected.current_state == "REJECTED"
     assert rejected.execution_results == []
 
-    second = safety_service.submit(duplicate_ticket)
+    second = safety_service.submit(duplicate_ticket, input_revision="second-review")
     escalated = safety_service.escalate(second.run_id, "Potential account takeover.", "portfolio-owner")
 
     assert escalated.current_state == "ESCALATED"

@@ -14,7 +14,11 @@ from supportflow.agents.resolution import ResolutionAgent
 from supportflow.agents.reviewer import RiskReviewerAgent
 from supportflow.agents.triage import TriageAgent
 from supportflow.domain.models import ApprovalInput, ApprovalRecord, RunError
-from supportflow.execution.executor import DurableExecutor, InMemoryExecutor
+from supportflow.execution.executor import (
+    DurableExecutor,
+    ExecutionExhausted,
+    InMemoryExecutor,
+)
 from supportflow.policy.gate import PolicyGate
 from supportflow.rag.retriever import RagRetriever
 from supportflow.storage.repositories import SupportFlowRepository
@@ -144,6 +148,8 @@ class SupportFlowGraph:
                     code="INVALID_ACTION",
                     message="Model output proposed an invalid action.",
                     trace_detail="invalid model action",
+                    attempt=1,
+                    retryable=False,
                 )
             except ModelExhausted:
                 return self._needs_attention(
@@ -152,6 +158,8 @@ class SupportFlowGraph:
                     code="MODEL_EXHAUSTED",
                     message="Model output remained unavailable after bounded retries.",
                     trace_detail="model output exhausted",
+                    attempt=2,
+                    retryable=True,
                 )
             return self._node_result(
                 state,
@@ -167,21 +175,67 @@ class SupportFlowGraph:
             if cached is not None:
                 return cached
             ticket = state["ticket"]
-            try:
-                evidence = self.retriever.retrieve(
-                    f"{ticket.subject} {ticket.body}",
-                    state["triage"].intent.value,
-                    self.as_of,
-                    top_k=len(self.retriever.chunks),
-                )
-            except ValueError:
-                return self._needs_attention(
-                    state,
-                    "retrieve",
-                    code="RETRIEVAL_UNAVAILABLE",
-                    message="Active policy evidence could not be retrieved.",
-                    trace_detail="retrieval unavailable",
-                )
+            local_attempt = 0
+            while True:
+                if self.repository is not None:
+                    attempt = self.repository.claim_operation_attempt(
+                        state["run_id"], "retrieve", max_attempts=2
+                    )
+                    if attempt is None:
+                        attempt = 2
+                        return self._needs_attention(
+                            state,
+                            "retrieve",
+                            code="RETRIEVAL_UNAVAILABLE",
+                            message="Active policy evidence could not be retrieved.",
+                            trace_detail="retrieval unavailable after bounded retry",
+                            attempt=attempt,
+                            retryable=True,
+                        )
+                else:
+                    local_attempt += 1
+                    attempt = local_attempt
+                try:
+                    evidence = self.retriever.retrieve(
+                        f"{ticket.subject} {ticket.body}",
+                        state["triage"].intent.value,
+                        self.as_of,
+                        top_k=len(self.retriever.chunks),
+                    )
+                except ValueError:
+                    if self.repository is not None:
+                        self.repository.mark_operation_result(
+                            state["run_id"],
+                            "retrieve",
+                            status="failed",
+                            error_type="RETRIEVAL_UNAVAILABLE",
+                        )
+                    if attempt < 2:
+                        retry_event = trace(
+                            "retrieval_retry",
+                            f"retrieve attempt {attempt}: RETRIEVAL_UNAVAILABLE",
+                        )
+                        if self.repository is not None:
+                            self.repository.trace.append(state["run_id"], retry_event)
+                        state = {
+                            **state,
+                            "trace": [*state.get("trace", []), retry_event],
+                        }
+                        continue
+                    return self._needs_attention(
+                        state,
+                        "retrieve",
+                        code="RETRIEVAL_UNAVAILABLE",
+                        message="Active policy evidence could not be retrieved.",
+                        trace_detail="retrieval unavailable after bounded retry",
+                        attempt=attempt,
+                        retryable=True,
+                    )
+                if self.repository is not None:
+                    self.repository.mark_operation_result(
+                        state["run_id"], "retrieve", status="succeeded"
+                    )
+                break
             return self._node_result(
                 state,
                 "retrieve",
@@ -209,6 +263,8 @@ class SupportFlowGraph:
                     code="INVALID_ACTION",
                     message="Model output proposed an invalid action.",
                     trace_detail="invalid model action",
+                    attempt=1,
+                    retryable=False,
                 )
             except ModelExhausted:
                 return self._needs_attention(
@@ -217,6 +273,8 @@ class SupportFlowGraph:
                     code="MODEL_EXHAUSTED",
                     message="Model output remained unavailable after bounded retries.",
                     trace_detail="model output exhausted",
+                    attempt=2,
+                    retryable=True,
                 )
             return self._node_result(
                 state,
@@ -245,6 +303,8 @@ class SupportFlowGraph:
                     code="INVALID_ACTION",
                     message="Model output proposed an invalid action.",
                     trace_detail="invalid model action",
+                    attempt=1,
+                    retryable=False,
                 )
             except ModelExhausted:
                 return self._needs_attention(
@@ -253,6 +313,8 @@ class SupportFlowGraph:
                     code="MODEL_EXHAUSTED",
                     message="Model output remained unavailable after bounded retries.",
                     trace_detail="model output exhausted",
+                    attempt=2,
+                    retryable=True,
                 )
             return self._node_result(
                 state,
@@ -300,7 +362,23 @@ class SupportFlowGraph:
             }
 
         def execute_node(state: WorkflowState) -> dict:
-            results = self.executor.execute(state["run_id"], state["proposal"], state.get("approval"))
+            try:
+                results = self.executor.execute(
+                    state["run_id"], state["proposal"], state.get("approval")
+                )
+            except ExecutionExhausted as error:
+                return {
+                    **self._needs_attention(
+                        state,
+                        "execute",
+                        code="EXECUTION_EXHAUSTED",
+                        message="A simulated action failed after bounded retries.",
+                        trace_detail="simulated execution exhausted",
+                        attempt=error.attempts,
+                        retryable=True,
+                    ),
+                    "execution_results": error.results,
+                }
             event = trace("execute", "simulated actions completed")
             if self.repository is not None:
                 self.repository.trace.append(state["run_id"], event)
@@ -359,14 +437,25 @@ class SupportFlowGraph:
         code: str,
         message: str,
         trace_detail: str,
+        attempt: int,
+        retryable: bool,
     ) -> dict:
         event = trace(stage, trace_detail)
+        error = RunError(
+            stage=stage,
+            error_type=code,
+            message=message,
+            attempt=attempt,
+            retryable=retryable,
+            occurred_at=datetime.now(UTC),
+        )
         if self.repository is not None:
             self.repository.trace.append(state["run_id"], event)
+            self.repository.record_run_error(state["run_id"], error)
             self.repository.mark_run_state(state["run_id"], "NEEDS_ATTENTION")
         return {
             "terminal_state": "NEEDS_ATTENTION",
-            "errors": [*state.get("errors", []), RunError(code=code, message=message)],
+            "errors": [*state.get("errors", []), error],
             "trace": [*state.get("trace", []), event],
         }
 
@@ -418,6 +507,8 @@ class SupportFlowGraph:
                     code="INVALID_ACTION",
                     message="Model output proposed an invalid action.",
                     trace_detail="invalid model action",
+                    attempt=1,
+                    retryable=False,
                 ),
             )
         except ModelExhausted:
@@ -429,6 +520,8 @@ class SupportFlowGraph:
                     code="MODEL_EXHAUSTED",
                     message="Model output remained unavailable after bounded retries.",
                     trace_detail="model output exhausted",
+                    attempt=2,
+                    retryable=True,
                 ),
             )
 

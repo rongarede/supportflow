@@ -9,6 +9,36 @@ from supportflow.domain.models import (
 )
 
 
+def _has_required_headings(action_type: ActionType, cited_headings: set[str]) -> bool:
+    if action_type == ActionType.CREATE_REFUND_REQUEST:
+        return (
+            {"duplicate-charge-verification", "duplicate-charge-refund-request"}
+            <= cited_headings
+            or "refund-eligibility" in cited_headings
+        )
+    if action_type == ActionType.SEND_REPLY:
+        return bool(
+            cited_headings
+            & {
+                "duplicate-charge-verification",
+                "refund-timing",
+                "refund-timing-details",
+                "refund-eligibility",
+            }
+        )
+    if action_type == ActionType.REQUEST_INFORMATION:
+        return bool(
+            cited_headings
+            & {"required-customer-verification", "payment-failure-required-details"}
+        )
+    if action_type == ActionType.ESCALATE_HUMAN:
+        return bool(
+            cited_headings
+            & {"human-escalation-conditions", "refund-escalation-conditions"}
+        )
+    return action_type == ActionType.ADD_TAG and bool(cited_headings)
+
+
 class PolicyGate:
     def evaluate(
         self, ticket: Ticket, evidence: EvidenceBundle, proposal: ResolutionProposal, review: RiskReview
@@ -28,18 +58,20 @@ class PolicyGate:
                 passed.append("PG-003")
             else:
                 failed.append("PG-003")
-            required_headings = {
-                ActionType.CREATE_REFUND_REQUEST: {
-                    "duplicate-charge-verification",
-                    "duplicate-charge-refund-request",
-                },
-                ActionType.SEND_REPLY: {"refund-timing"},
-            }
-            cited_headings = {item.heading for item in referenced}
-            if all(required_headings[action.action_type] <= cited_headings for action in proposal.actions):
+            heading_by_id = {item.evidence_id: item.heading for item in referenced}
+            if all(
+                set(action.evidence_refs) <= set(proposal.evidence_refs)
+                and set(action.evidence_refs) <= evidence_ids
+                and _has_required_headings(
+                    action_type=action.action_type,
+                    cited_headings={heading_by_id[ref] for ref in action.evidence_refs},
+                )
+                for action in proposal.actions
+            ):
                 passed.append("PG-004")
             else:
                 failed.append("PG-004")
+            cited_headings = {item.heading for item in referenced}
             if {"refund-eligibility", "refund-exclusion"} <= cited_headings:
                 failed.append("PG-009")
         if all(action.action_type in set(ActionType) for action in proposal.actions):
@@ -51,7 +83,7 @@ class PolicyGate:
             passed.append("PG-006")
         else:
             failed.append("PG-006")
-        if not review.escalated:
+        if review.decision == "pass":
             passed.append("PG-007")
         else:
             failed.append("PG-007")
@@ -59,6 +91,16 @@ class PolicyGate:
             passed.append("PG-008")
         else:
             failed.append("PG-008")
+        reply_actions = [
+            action for action in proposal.actions if action.action_type == ActionType.SEND_REPLY
+        ]
+        if not reply_actions or all(
+            action.parameters.get("message") == proposal.reply_text
+            for action in reply_actions
+        ):
+            passed.append("PG-010")
+        else:
+            failed.append("PG-010")
         escalation_failures = {"PG-003", "PG-007", "PG-009"}
         outcome = "allow" if not failed else "escalate" if escalation_failures.intersection(failed) else "block"
         return PolicyDecision(

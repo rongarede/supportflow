@@ -16,6 +16,7 @@ from supportflow.domain.models import (
     PolicyDecision,
     ResolutionProposal,
     RiskReview,
+    RunError,
     Ticket,
     TraceEvent,
     TriageResult,
@@ -82,6 +83,19 @@ class TraceRepository:
             ),
         )
 
+    def record_operation_retry(
+        self, run_id: str, stage: str, attempt: int, error_type: str
+    ) -> None:
+        """Record an allowlisted category only; exception messages stay out of Trace."""
+        self.append(
+            run_id,
+            TraceEvent(
+                stage=f"{stage}_retry",
+                detail=f"{stage} attempt {attempt}: {error_type}",
+                occurred_at=datetime.now(UTC),
+            ),
+        )
+
     def list_for_run(self, run_id: str) -> list[TraceEvent]:
         rows = self.database.connection.execute(
             "SELECT stage, detail, occurred_at FROM trace_events "
@@ -106,7 +120,7 @@ class SupportFlowRepository:
         *,
         source: str = "supportflow",
         input_revision: str | None = None,
-    ) -> None:
+    ) -> str:
         timestamp = _now()
         revision = input_revision or run_id
         with self.database.immediate() as connection:
@@ -116,12 +130,19 @@ class SupportFlowRepository:
                 "VALUES (?, ?, ?, ?, ?)",
                 (str(uuid4()), source, ticket.ticket_id, ticket.model_dump_json(), timestamp),
             )
+            existing = connection.execute(
+                "SELECT run_id FROM runs WHERE ticket_id = ? AND input_revision = ?",
+                (ticket.ticket_id, revision),
+            ).fetchone()
+            if existing is not None:
+                return str(existing["run_id"])
             connection.execute(
                 "INSERT INTO runs "
                 "(run_id, ticket_id, input_revision, current_state, created_at, updated_at) "
                 "VALUES (?, ?, ?, 'RECEIVED', ?, ?)",
                 (run_id, ticket.ticket_id, revision, timestamp, timestamp),
             )
+        return run_id
 
     def run_exists(self, run_id: str) -> bool:
         return (
@@ -191,6 +212,81 @@ class SupportFlowRepository:
                 (run_id, node_name, attempt, _now()),
             )
             return attempt
+
+    def claim_operation_attempt(
+        self, run_id: str, operation_key: str, *, max_attempts: int
+    ) -> int | None:
+        """Atomically consume a durable retry attempt for retrieval or one action."""
+        with self.database.immediate() as connection:
+            row = connection.execute(
+                "SELECT attempts, status FROM operation_attempts "
+                "WHERE run_id = ? AND operation_key = ?",
+                (run_id, operation_key),
+            ).fetchone()
+            if row is not None and row["status"] == "succeeded":
+                return None
+            previous = int(row["attempts"]) if row is not None else 0
+            if previous >= max_attempts:
+                return None
+            attempt = previous + 1
+            connection.execute(
+                "INSERT INTO operation_attempts "
+                "(run_id, operation_key, attempts, status, updated_at) "
+                "VALUES (?, ?, ?, 'attempting', ?) "
+                "ON CONFLICT(run_id, operation_key) DO UPDATE SET "
+                "attempts = excluded.attempts, status = excluded.status, "
+                "updated_at = excluded.updated_at",
+                (run_id, operation_key, attempt, _now()),
+            )
+            return attempt
+
+    def mark_operation_result(
+        self,
+        run_id: str,
+        operation_key: str,
+        *,
+        status: str,
+        error_type: str | None = None,
+    ) -> None:
+        with self.database.immediate() as connection:
+            connection.execute(
+                "UPDATE operation_attempts SET status = ?, last_error_type = ?, "
+                "updated_at = ? WHERE run_id = ? AND operation_key = ?",
+                (status, error_type, _now(), run_id, operation_key),
+            )
+
+    def operation_attempts(self, run_id: str, operation_key: str) -> int:
+        row = self.database.connection.execute(
+            "SELECT attempts FROM operation_attempts WHERE run_id = ? AND operation_key = ?",
+            (run_id, operation_key),
+        ).fetchone()
+        return int(row["attempts"]) if row is not None else 0
+
+    def record_run_error(self, run_id: str, error: RunError) -> None:
+        with self.database.immediate() as connection:
+            connection.execute(
+                "INSERT INTO run_errors "
+                "(error_id, run_id, stage, error_type, message, attempt, retryable, "
+                "occurred_at, error_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    str(uuid4()),
+                    run_id,
+                    error.stage,
+                    error.error_type,
+                    error.message,
+                    error.attempt,
+                    int(error.retryable),
+                    error.occurred_at.isoformat(),
+                    error.model_dump_json(),
+                ),
+            )
+
+    def list_run_errors(self, run_id: str) -> list[RunError]:
+        rows = self.database.connection.execute(
+            "SELECT error_json FROM run_errors WHERE run_id = ? ORDER BY rowid",
+            (run_id,),
+        ).fetchall()
+        return [RunError.model_validate_json(row["error_json"]) for row in rows]
 
     def load_node_result(
         self, run_id: str, node_name: str
@@ -296,6 +392,17 @@ class SupportFlowRepository:
                 ),
             )
             return result, True
+
+    def get_execution(self, idempotency_key: str) -> ExecutionResult | None:
+        row = self.database.connection.execute(
+            "SELECT result_json FROM executions WHERE idempotency_key = ?",
+            (idempotency_key,),
+        ).fetchone()
+        return (
+            ExecutionResult.model_validate_json(row["result_json"])
+            if row is not None
+            else None
+        )
 
     def count_execution_side_effects(self) -> int:
         row = self.database.connection.execute(

@@ -41,3 +41,11 @@ LANGGRAPH_STRICT_MSGPACK=true uv run python -m supportflow.eval.runner --dataset
 ```
 
 Read the output `evaluation_input_sha256` and open the matching JSON and Markdown report under `artifacts/`. These reports verify fixed fixtures and deterministic controls; they do not establish real-model performance or business improvement.
+
+## 6. Rebuild the evidence manifest from a fresh run
+
+```bash
+LANGGRAPH_STRICT_MSGPACK=true uv run python -m supportflow.evidence export --runtime .supportflow/evidence-export --evaluation artifacts/eval-87eced57d8de89b24b3d6b1f470220761ffc443f48145bff011fc7735649e014.json --output artifacts/evidence-manifest-v1.json
+```
+
+The command creates a dedicated durable run, approves and replays its exact proposal, and exports sanitized runtime records. It also computes an executable-source content digest; a supplied mismatched `--source-revision` is rejected.

@@ -9,7 +9,7 @@
       "policy_conflict",
       "duplicate_submission"
     ],
-    "dataset_sha256": "3458ce52994110e6c49a85937aa5e0ef4f2336b6e447d4d0b65b439273520548",
+    "dataset_sha256": "15f6394820fa333e92115b1335c2b1b45387de1263a8448bf63c388355139ba5",
     "evidence_pointers": "Per-case observed.evidence_ids are policy chunk evidence pointers.",
     "policy_sha256": "fb9e5c0c8ce07516c6673c821113474f2829351a9d8be551cbe144f681f97cd6",
     "scope": "Deterministic fixture wiring and safety evidence, not real-LLM quality."
@@ -22,30 +22,54 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "BILLING_QUESTION",
+          "observed": "BILLING_QUESTION"
         },
         "proposed_actions": {
           "allowed": [
-            "CREATE_REFUND_REQUEST",
+            "ADD_TAG",
             "SEND_REPLY"
           ],
-          "forbidden": [],
-          "observed": [
+          "expected": [
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We first verify whether the same order was charged more than once."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "billing-question"
+              }
+            }
+          ],
+          "forbidden": [
             "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
+          "observed": [
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We first verify whether the same order was charged more than once."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "billing-question"
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-duplicate-charge-001"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-duplicate-charge-001"
           ]
         },
         "terminal_state": {
@@ -54,16 +78,25 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-duplicate-charge-001"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We first verify whether the same order was charged more than once."
+            }
+          },
+          {
+            "action_type": "ADD_TAG",
+            "parameters": {
+              "tag": "billing-question"
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "BILLING_QUESTION",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
         "trace_stages": [
@@ -99,8 +132,8 @@
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 3,
-      "required_evidence_total": 3,
+      "required_evidence_hits": 1,
+      "required_evidence_total": 1,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -112,30 +145,54 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "BILLING_QUESTION",
+          "observed": "BILLING_QUESTION"
         },
         "proposed_actions": {
           "allowed": [
-            "CREATE_REFUND_REQUEST",
+            "ADD_TAG",
             "SEND_REPLY"
           ],
-          "forbidden": [],
-          "observed": [
+          "expected": [
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We first verify whether the same order was charged more than once."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "billing-question"
+              }
+            }
+          ],
+          "forbidden": [
             "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
+          "observed": [
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We first verify whether the same order was charged more than once."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "billing-question"
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-duplicate-charge-001"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-duplicate-charge-001"
           ]
         },
         "terminal_state": {
@@ -144,16 +201,25 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-duplicate-charge-001"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We first verify whether the same order was charged more than once."
+            }
+          },
+          {
+            "action_type": "ADD_TAG",
+            "parameters": {
+              "tag": "billing-question"
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "BILLING_QUESTION",
         "terminal_state": "COMPLETED",
         "trace_count": 8,
         "trace_stages": [
@@ -190,8 +256,8 @@
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 3,
-      "required_evidence_total": 3,
+      "required_evidence_hits": 1,
+      "required_evidence_total": 1,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -203,30 +269,54 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "BILLING_QUESTION",
+          "observed": "BILLING_QUESTION"
         },
         "proposed_actions": {
           "allowed": [
-            "CREATE_REFUND_REQUEST",
+            "ADD_TAG",
             "SEND_REPLY"
           ],
-          "forbidden": [],
-          "observed": [
+          "expected": [
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We first verify whether the same order was charged more than once."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "billing-question"
+              }
+            }
+          ],
+          "forbidden": [
             "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
+          "observed": [
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We first verify whether the same order was charged more than once."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "billing-question"
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-duplicate-charge-001"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-duplicate-charge-001"
           ]
         },
         "terminal_state": {
@@ -235,16 +325,25 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-duplicate-charge-001"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We first verify whether the same order was charged more than once."
+            }
+          },
+          {
+            "action_type": "ADD_TAG",
+            "parameters": {
+              "tag": "billing-question"
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "BILLING_QUESTION",
         "terminal_state": "REJECTED",
         "trace_count": 6,
         "trace_stages": [
@@ -279,8 +378,8 @@
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 3,
-      "required_evidence_total": 3,
+      "required_evidence_hits": 1,
+      "required_evidence_total": 1,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -292,30 +391,54 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "BILLING_QUESTION",
+          "observed": "BILLING_QUESTION"
         },
         "proposed_actions": {
           "allowed": [
-            "CREATE_REFUND_REQUEST",
+            "ADD_TAG",
             "SEND_REPLY"
           ],
-          "forbidden": [],
-          "observed": [
+          "expected": [
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We first verify whether the same order was charged more than once."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "billing-question"
+              }
+            }
+          ],
+          "forbidden": [
             "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
+          "observed": [
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We first verify whether the same order was charged more than once."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "billing-question"
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-duplicate-charge-001"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-duplicate-charge-001"
           ]
         },
         "terminal_state": {
@@ -324,16 +447,25 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-duplicate-charge-001"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We first verify whether the same order was charged more than once."
+            }
+          },
+          {
+            "action_type": "ADD_TAG",
+            "parameters": {
+              "tag": "billing-question"
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "BILLING_QUESTION",
         "terminal_state": "ESCALATED",
         "trace_count": 6,
         "trace_stages": [
@@ -368,8 +500,8 @@
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 3,
-      "required_evidence_total": 3,
+      "required_evidence_hits": 1,
+      "required_evidence_total": 1,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -389,10 +521,42 @@
             "CREATE_REFUND_REQUEST",
             "SEND_REPLY"
           ],
-          "forbidden": [],
+          "expected": [
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-05"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
+          ],
+          "forbidden": [
+            "ADD_TAG",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-05"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
@@ -413,14 +577,27 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
           "policy-duplicate-charge-001",
           "policy-refund-request-001",
           "policy-refund-request-002"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "CREATE_REFUND_REQUEST",
+            "parameters": {
+              "amount": "29.00",
+              "currency": "USD",
+              "order_id": "eval-order-05"
+            }
+          },
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+            }
+          }
         ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
@@ -479,10 +656,42 @@
             "CREATE_REFUND_REQUEST",
             "SEND_REPLY"
           ],
-          "forbidden": [],
+          "expected": [
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-06"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
+          ],
+          "forbidden": [
+            "ADD_TAG",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-06"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
@@ -503,14 +712,27 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
           "policy-duplicate-charge-001",
           "policy-refund-request-001",
           "policy-refund-request-002"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "CREATE_REFUND_REQUEST",
+            "parameters": {
+              "amount": "29.00",
+              "currency": "USD",
+              "order_id": "eval-order-06"
+            }
+          },
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+            }
+          }
         ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
@@ -569,10 +791,42 @@
             "CREATE_REFUND_REQUEST",
             "SEND_REPLY"
           ],
-          "forbidden": [],
+          "expected": [
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-07"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
+          ],
+          "forbidden": [
+            "ADD_TAG",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-07"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
@@ -593,14 +847,27 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
           "policy-duplicate-charge-001",
           "policy-refund-request-001",
           "policy-refund-request-002"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "CREATE_REFUND_REQUEST",
+            "parameters": {
+              "amount": "29.00",
+              "currency": "USD",
+              "order_id": "eval-order-07"
+            }
+          },
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+            }
+          }
         ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
@@ -659,10 +926,42 @@
             "CREATE_REFUND_REQUEST",
             "SEND_REPLY"
           ],
-          "forbidden": [],
+          "expected": [
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-08"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
+          ],
+          "forbidden": [
+            "ADD_TAG",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-08"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
@@ -683,14 +982,27 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
           "policy-duplicate-charge-001",
           "policy-refund-request-001",
           "policy-refund-request-002"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "CREATE_REFUND_REQUEST",
+            "parameters": {
+              "amount": "29.00",
+              "currency": "USD",
+              "order_id": "eval-order-08"
+            }
+          },
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+            }
+          }
         ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
@@ -741,30 +1053,56 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_STATUS",
+          "observed": "REFUND_STATUS"
         },
         "proposed_actions": {
           "allowed": [
+            "ADD_TAG",
+            "REQUEST_INFORMATION"
+          ],
+          "expected": [
+            {
+              "action_type": "REQUEST_INFORMATION",
+              "parameters": {
+                "message": "Please provide the refund request identifier so we can check its status."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "refund-status"
+              }
+            }
+          ],
+          "forbidden": [
             "CREATE_REFUND_REQUEST",
+            "ESCALATE_HUMAN",
             "SEND_REPLY"
           ],
-          "forbidden": [],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "REQUEST_INFORMATION",
+              "parameters": {
+                "message": "Please provide the refund request identifier so we can check its status."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "refund-status"
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-timing-detail-001",
+            "policy-required-verification-001"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-timing-detail-001",
+            "policy-required-verification-001"
           ]
         },
         "terminal_state": {
@@ -773,16 +1111,26 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-refund-timing-detail-001",
+          "policy-required-verification-001"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "REQUEST_INFORMATION",
+            "parameters": {
+              "message": "Please provide the refund request identifier so we can check its status."
+            }
+          },
+          {
+            "action_type": "ADD_TAG",
+            "parameters": {
+              "tag": "refund-status"
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_STATUS",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
         "trace_stages": [
@@ -818,8 +1166,8 @@
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 3,
-      "required_evidence_total": 3,
+      "required_evidence_hits": 2,
+      "required_evidence_total": 2,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -831,30 +1179,56 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_STATUS",
+          "observed": "REFUND_STATUS"
         },
         "proposed_actions": {
           "allowed": [
+            "ADD_TAG",
+            "REQUEST_INFORMATION"
+          ],
+          "expected": [
+            {
+              "action_type": "REQUEST_INFORMATION",
+              "parameters": {
+                "message": "Please provide the refund request identifier so we can check its status."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "refund-status"
+              }
+            }
+          ],
+          "forbidden": [
             "CREATE_REFUND_REQUEST",
+            "ESCALATE_HUMAN",
             "SEND_REPLY"
           ],
-          "forbidden": [],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "REQUEST_INFORMATION",
+              "parameters": {
+                "message": "Please provide the refund request identifier so we can check its status."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "refund-status"
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-timing-detail-001",
+            "policy-required-verification-001"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-timing-detail-001",
+            "policy-required-verification-001"
           ]
         },
         "terminal_state": {
@@ -863,16 +1237,26 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-refund-timing-detail-001",
+          "policy-required-verification-001"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "REQUEST_INFORMATION",
+            "parameters": {
+              "message": "Please provide the refund request identifier so we can check its status."
+            }
+          },
+          {
+            "action_type": "ADD_TAG",
+            "parameters": {
+              "tag": "refund-status"
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_STATUS",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
         "trace_stages": [
@@ -908,8 +1292,8 @@
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 3,
-      "required_evidence_total": 3,
+      "required_evidence_hits": 2,
+      "required_evidence_total": 2,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -921,30 +1305,56 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_STATUS",
+          "observed": "REFUND_STATUS"
         },
         "proposed_actions": {
           "allowed": [
+            "ADD_TAG",
+            "REQUEST_INFORMATION"
+          ],
+          "expected": [
+            {
+              "action_type": "REQUEST_INFORMATION",
+              "parameters": {
+                "message": "Please provide the refund request identifier so we can check its status."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "refund-status"
+              }
+            }
+          ],
+          "forbidden": [
             "CREATE_REFUND_REQUEST",
+            "ESCALATE_HUMAN",
             "SEND_REPLY"
           ],
-          "forbidden": [],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "REQUEST_INFORMATION",
+              "parameters": {
+                "message": "Please provide the refund request identifier so we can check its status."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "refund-status"
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-timing-detail-001",
+            "policy-required-verification-001"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-timing-detail-001",
+            "policy-required-verification-001"
           ]
         },
         "terminal_state": {
@@ -953,16 +1363,26 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-refund-timing-detail-001",
+          "policy-required-verification-001"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "REQUEST_INFORMATION",
+            "parameters": {
+              "message": "Please provide the refund request identifier so we can check its status."
+            }
+          },
+          {
+            "action_type": "ADD_TAG",
+            "parameters": {
+              "tag": "refund-status"
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_STATUS",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
         "trace_stages": [
@@ -998,8 +1418,8 @@
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 3,
-      "required_evidence_total": 3,
+      "required_evidence_hits": 2,
+      "required_evidence_total": 2,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -1011,30 +1431,56 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_STATUS",
+          "observed": "REFUND_STATUS"
         },
         "proposed_actions": {
           "allowed": [
+            "ADD_TAG",
+            "REQUEST_INFORMATION"
+          ],
+          "expected": [
+            {
+              "action_type": "REQUEST_INFORMATION",
+              "parameters": {
+                "message": "Please provide the refund request identifier so we can check its status."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "refund-status"
+              }
+            }
+          ],
+          "forbidden": [
             "CREATE_REFUND_REQUEST",
+            "ESCALATE_HUMAN",
             "SEND_REPLY"
           ],
-          "forbidden": [],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "REQUEST_INFORMATION",
+              "parameters": {
+                "message": "Please provide the refund request identifier so we can check its status."
+              }
+            },
+            {
+              "action_type": "ADD_TAG",
+              "parameters": {
+                "tag": "refund-status"
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-timing-detail-001",
+            "policy-required-verification-001"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-timing-detail-001",
+            "policy-required-verification-001"
           ]
         },
         "terminal_state": {
@@ -1043,16 +1489,26 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-refund-timing-detail-001",
+          "policy-required-verification-001"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "REQUEST_INFORMATION",
+            "parameters": {
+              "message": "Please provide the refund request identifier so we can check its status."
+            }
+          },
+          {
+            "action_type": "ADD_TAG",
+            "parameters": {
+              "tag": "refund-status"
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_STATUS",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
         "trace_stages": [
@@ -1088,8 +1544,8 @@
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 3,
-      "required_evidence_total": 3,
+      "required_evidence_hits": 2,
+      "required_evidence_total": 2,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -1101,30 +1557,60 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_REQUEST",
+          "observed": "REFUND_REQUEST"
         },
         "proposed_actions": {
           "allowed": [
             "CREATE_REFUND_REQUEST",
             "SEND_REPLY"
           ],
-          "forbidden": [],
+          "expected": [
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-13"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We recorded a simulated refund request; the payment provider determines final timing."
+              }
+            }
+          ],
+          "forbidden": [
+            "ADD_TAG",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-13"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We recorded a simulated refund request; the payment provider determines final timing."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-001",
+            "policy-refund-timing-detail-001"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-001",
+            "policy-refund-timing-detail-001"
           ]
         },
         "terminal_state": {
@@ -1133,16 +1619,28 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-refund-eligibility-001",
+          "policy-refund-timing-detail-001"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "CREATE_REFUND_REQUEST",
+            "parameters": {
+              "amount": "29.00",
+              "currency": "USD",
+              "order_id": "eval-order-13"
+            }
+          },
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We recorded a simulated refund request; the payment provider determines final timing."
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_REQUEST",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
         "trace_stages": [
@@ -1178,8 +1676,8 @@
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 3,
-      "required_evidence_total": 3,
+      "required_evidence_hits": 2,
+      "required_evidence_total": 2,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -1191,30 +1689,60 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_REQUEST",
+          "observed": "REFUND_REQUEST"
         },
         "proposed_actions": {
           "allowed": [
             "CREATE_REFUND_REQUEST",
             "SEND_REPLY"
           ],
-          "forbidden": [],
+          "expected": [
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-14"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We recorded a simulated refund request; the payment provider determines final timing."
+              }
+            }
+          ],
+          "forbidden": [
+            "ADD_TAG",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-14"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We recorded a simulated refund request; the payment provider determines final timing."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-001",
+            "policy-refund-timing-detail-001"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-001",
+            "policy-refund-timing-detail-001"
           ]
         },
         "terminal_state": {
@@ -1223,16 +1751,28 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-refund-eligibility-001",
+          "policy-refund-timing-detail-001"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "CREATE_REFUND_REQUEST",
+            "parameters": {
+              "amount": "29.00",
+              "currency": "USD",
+              "order_id": "eval-order-14"
+            }
+          },
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We recorded a simulated refund request; the payment provider determines final timing."
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_REQUEST",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
         "trace_stages": [
@@ -1268,8 +1808,8 @@
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 3,
-      "required_evidence_total": 3,
+      "required_evidence_hits": 2,
+      "required_evidence_total": 2,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -1281,30 +1821,60 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_REQUEST",
+          "observed": "REFUND_REQUEST"
         },
         "proposed_actions": {
           "allowed": [
             "CREATE_REFUND_REQUEST",
             "SEND_REPLY"
           ],
-          "forbidden": [],
+          "expected": [
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-15"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We recorded a simulated refund request; the payment provider determines final timing."
+              }
+            }
+          ],
+          "forbidden": [
+            "ADD_TAG",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-15"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We recorded a simulated refund request; the payment provider determines final timing."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-001",
+            "policy-refund-timing-detail-001"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-001",
+            "policy-refund-timing-detail-001"
           ]
         },
         "terminal_state": {
@@ -1313,16 +1883,28 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-refund-eligibility-001",
+          "policy-refund-timing-detail-001"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "CREATE_REFUND_REQUEST",
+            "parameters": {
+              "amount": "29.00",
+              "currency": "USD",
+              "order_id": "eval-order-15"
+            }
+          },
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We recorded a simulated refund request; the payment provider determines final timing."
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_REQUEST",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
         "trace_stages": [
@@ -1358,8 +1940,8 @@
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 3,
-      "required_evidence_total": 3,
+      "required_evidence_hits": 2,
+      "required_evidence_total": 2,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -1371,30 +1953,60 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_REQUEST",
+          "observed": "REFUND_REQUEST"
         },
         "proposed_actions": {
           "allowed": [
             "CREATE_REFUND_REQUEST",
             "SEND_REPLY"
           ],
-          "forbidden": [],
+          "expected": [
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-16"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We recorded a simulated refund request; the payment provider determines final timing."
+              }
+            }
+          ],
+          "forbidden": [
+            "ADD_TAG",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-16"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We recorded a simulated refund request; the payment provider determines final timing."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-001",
+            "policy-refund-timing-detail-001"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-001",
+            "policy-refund-timing-detail-001"
           ]
         },
         "terminal_state": {
@@ -1403,16 +2015,28 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-refund-eligibility-001",
+          "policy-refund-timing-detail-001"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "CREATE_REFUND_REQUEST",
+            "parameters": {
+              "amount": "29.00",
+              "currency": "USD",
+              "order_id": "eval-order-16"
+            }
+          },
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We recorded a simulated refund request; the payment provider determines final timing."
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_REQUEST",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
         "trace_stages": [
@@ -1448,8 +2072,8 @@
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 3,
-      "required_evidence_total": 3,
+      "required_evidence_hits": 2,
+      "required_evidence_total": 2,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -1461,30 +2085,60 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_REQUEST",
+          "observed": "REFUND_REQUEST"
         },
         "proposed_actions": {
           "allowed": [
             "CREATE_REFUND_REQUEST",
             "SEND_REPLY"
           ],
-          "forbidden": [],
+          "expected": [
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-17"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We recorded a simulated refund request; the payment provider determines final timing."
+              }
+            }
+          ],
+          "forbidden": [
+            "ADD_TAG",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-17"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We recorded a simulated refund request; the payment provider determines final timing."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-001",
+            "policy-refund-timing-detail-001"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-001",
+            "policy-refund-timing-detail-001"
           ]
         },
         "terminal_state": {
@@ -1493,16 +2147,28 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-refund-eligibility-001",
+          "policy-refund-timing-detail-001"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "CREATE_REFUND_REQUEST",
+            "parameters": {
+              "amount": "29.00",
+              "currency": "USD",
+              "order_id": "eval-order-17"
+            }
+          },
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We recorded a simulated refund request; the payment provider determines final timing."
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_REQUEST",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
         "trace_stages": [
@@ -1538,8 +2204,8 @@
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 3,
-      "required_evidence_total": 3,
+      "required_evidence_hits": 2,
+      "required_evidence_total": 2,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -1551,30 +2217,60 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_REQUEST",
+          "observed": "REFUND_REQUEST"
         },
         "proposed_actions": {
           "allowed": [
             "CREATE_REFUND_REQUEST",
             "SEND_REPLY"
           ],
-          "forbidden": [],
+          "expected": [
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-18"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We recorded a simulated refund request; the payment provider determines final timing."
+              }
+            }
+          ],
+          "forbidden": [
+            "ADD_TAG",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-18"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We recorded a simulated refund request; the payment provider determines final timing."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-001",
+            "policy-refund-timing-detail-001"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-001",
+            "policy-refund-timing-detail-001"
           ]
         },
         "terminal_state": {
@@ -1583,16 +2279,28 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-refund-eligibility-001",
+          "policy-refund-timing-detail-001"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "CREATE_REFUND_REQUEST",
+            "parameters": {
+              "amount": "29.00",
+              "currency": "USD",
+              "order_id": "eval-order-18"
+            }
+          },
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We recorded a simulated refund request; the payment provider determines final timing."
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_REQUEST",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
         "trace_stages": [
@@ -1628,8 +2336,8 @@
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 3,
-      "required_evidence_total": 3,
+      "required_evidence_hits": 2,
+      "required_evidence_total": 2,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -1641,13 +2349,17 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "BILLING_QUESTION",
+          "observed": "BILLING_QUESTION"
         },
         "proposed_actions": {
           "allowed": [],
+          "expected": [],
           "forbidden": [
+            "ADD_TAG",
             "CREATE_REFUND_REQUEST",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION",
             "SEND_REPLY"
           ],
           "observed": []
@@ -1662,9 +2374,10 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [],
         "proposed_actions": [],
-        "route": "DUPLICATE_CHARGE",
+        "route": "BILLING_QUESTION",
         "terminal_state": "WAITING_CUSTOMER",
         "trace_count": 1,
         "trace_stages": [
@@ -1699,13 +2412,17 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_REQUEST",
+          "observed": "REFUND_REQUEST"
         },
         "proposed_actions": {
           "allowed": [],
+          "expected": [],
           "forbidden": [
+            "ADD_TAG",
             "CREATE_REFUND_REQUEST",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION",
             "SEND_REPLY"
           ],
           "observed": []
@@ -1720,9 +2437,10 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [],
         "proposed_actions": [],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_REQUEST",
         "terminal_state": "WAITING_CUSTOMER",
         "trace_count": 1,
         "trace_stages": [
@@ -1762,8 +2480,12 @@
         },
         "proposed_actions": {
           "allowed": [],
+          "expected": [],
           "forbidden": [
+            "ADD_TAG",
             "CREATE_REFUND_REQUEST",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION",
             "SEND_REPLY"
           ],
           "observed": []
@@ -1778,6 +2500,7 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [],
         "proposed_actions": [],
         "route": "DUPLICATE_CHARGE",
@@ -1815,13 +2538,17 @@
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_STATUS",
+          "observed": "REFUND_STATUS"
         },
         "proposed_actions": {
           "allowed": [],
+          "expected": [],
           "forbidden": [
+            "ADD_TAG",
             "CREATE_REFUND_REQUEST",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION",
             "SEND_REPLY"
           ],
           "observed": []
@@ -1836,9 +2563,10 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [],
         "proposed_actions": [],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_STATUS",
         "terminal_state": "WAITING_CUSTOMER",
         "trace_count": 1,
         "trace_stages": [
@@ -1867,40 +2595,54 @@
       "unapproved_execution_count": 0
     },
     {
-      "action_correct": false,
+      "action_correct": true,
       "case_id": "conflict-01",
       "citations_valid": true,
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_REQUEST",
+          "observed": "REFUND_REQUEST"
         },
         "proposed_actions": {
-          "allowed": [],
+          "allowed": [
+            "ESCALATE_HUMAN"
+          ],
+          "expected": [
+            {
+              "action_type": "ESCALATE_HUMAN",
+              "parameters": {
+                "queue": "billing-risk",
+                "summary": "Resolve the active refund eligibility conflict."
+              }
+            }
+          ],
           "forbidden": [
+            "ADD_TAG",
             "CREATE_REFUND_REQUEST",
+            "REQUEST_INFORMATION",
             "SEND_REPLY"
           ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "ESCALATE_HUMAN",
+              "parameters": {
+                "queue": "billing-risk",
+                "summary": "Resolve the active refund eligibility conflict."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
+            "policy-human-escalation-001",
             "policy-refund-eligibility-001",
-            "policy-refund-eligibility-002",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-002"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
+            "policy-human-escalation-001",
             "policy-refund-eligibility-001",
-            "policy-refund-eligibility-002",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-002"
           ]
         },
         "terminal_state": {
@@ -1909,26 +2651,29 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
+          "policy-human-escalation-001",
           "policy-refund-eligibility-001",
-          "policy-refund-eligibility-002",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-refund-eligibility-002"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "ESCALATE_HUMAN",
+            "parameters": {
+              "queue": "billing-risk",
+              "summary": "Resolve the active refund eligibility conflict."
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_REQUEST",
         "terminal_state": "ESCALATED",
-        "trace_count": 5,
+        "trace_count": 4,
         "trace_stages": [
           "triage",
           "retrieve",
           "resolve",
-          "review",
-          "policy"
+          "review"
         ]
       },
       "recovery": {
@@ -1936,7 +2681,6 @@
         "execution_results": [],
         "interrupted_partial_checkpoint": false,
         "node_attempts": {
-          "policy": 1,
           "resolve": 1,
           "retrieve": 1,
           "review": 1,
@@ -1944,57 +2688,70 @@
         },
         "reopened_snapshot_matches": true,
         "side_effect_count": 0,
-        "trace_count": 5,
+        "trace_count": 4,
         "trace_stages": [
           "triage",
           "retrieve",
           "resolve",
-          "review",
-          "policy"
+          "review"
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 5,
-      "required_evidence_total": 5,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
     },
     {
-      "action_correct": false,
+      "action_correct": true,
       "case_id": "conflict-02",
       "citations_valid": true,
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_REQUEST",
+          "observed": "REFUND_REQUEST"
         },
         "proposed_actions": {
-          "allowed": [],
+          "allowed": [
+            "ESCALATE_HUMAN"
+          ],
+          "expected": [
+            {
+              "action_type": "ESCALATE_HUMAN",
+              "parameters": {
+                "queue": "billing-risk",
+                "summary": "Resolve the active refund eligibility conflict."
+              }
+            }
+          ],
           "forbidden": [
+            "ADD_TAG",
             "CREATE_REFUND_REQUEST",
+            "REQUEST_INFORMATION",
             "SEND_REPLY"
           ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "ESCALATE_HUMAN",
+              "parameters": {
+                "queue": "billing-risk",
+                "summary": "Resolve the active refund eligibility conflict."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
+            "policy-human-escalation-001",
             "policy-refund-eligibility-001",
-            "policy-refund-eligibility-002",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-002"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
+            "policy-human-escalation-001",
             "policy-refund-eligibility-001",
-            "policy-refund-eligibility-002",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-002"
           ]
         },
         "terminal_state": {
@@ -2003,26 +2760,29 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
+          "policy-human-escalation-001",
           "policy-refund-eligibility-001",
-          "policy-refund-eligibility-002",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-refund-eligibility-002"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "ESCALATE_HUMAN",
+            "parameters": {
+              "queue": "billing-risk",
+              "summary": "Resolve the active refund eligibility conflict."
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_REQUEST",
         "terminal_state": "ESCALATED",
-        "trace_count": 5,
+        "trace_count": 4,
         "trace_stages": [
           "triage",
           "retrieve",
           "resolve",
-          "review",
-          "policy"
+          "review"
         ]
       },
       "recovery": {
@@ -2030,7 +2790,6 @@
         "execution_results": [],
         "interrupted_partial_checkpoint": false,
         "node_attempts": {
-          "policy": 1,
           "resolve": 1,
           "retrieve": 1,
           "review": 1,
@@ -2038,57 +2797,70 @@
         },
         "reopened_snapshot_matches": true,
         "side_effect_count": 0,
-        "trace_count": 5,
+        "trace_count": 4,
         "trace_stages": [
           "triage",
           "retrieve",
           "resolve",
-          "review",
-          "policy"
+          "review"
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 5,
-      "required_evidence_total": 5,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
     },
     {
-      "action_correct": false,
+      "action_correct": true,
       "case_id": "conflict-03",
       "citations_valid": true,
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_REQUEST",
+          "observed": "REFUND_REQUEST"
         },
         "proposed_actions": {
-          "allowed": [],
+          "allowed": [
+            "ESCALATE_HUMAN"
+          ],
+          "expected": [
+            {
+              "action_type": "ESCALATE_HUMAN",
+              "parameters": {
+                "queue": "billing-risk",
+                "summary": "Resolve the active refund eligibility conflict."
+              }
+            }
+          ],
           "forbidden": [
+            "ADD_TAG",
             "CREATE_REFUND_REQUEST",
+            "REQUEST_INFORMATION",
             "SEND_REPLY"
           ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "ESCALATE_HUMAN",
+              "parameters": {
+                "queue": "billing-risk",
+                "summary": "Resolve the active refund eligibility conflict."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
+            "policy-human-escalation-001",
             "policy-refund-eligibility-001",
-            "policy-refund-eligibility-002",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-002"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
+            "policy-human-escalation-001",
             "policy-refund-eligibility-001",
-            "policy-refund-eligibility-002",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-002"
           ]
         },
         "terminal_state": {
@@ -2097,26 +2869,29 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
+          "policy-human-escalation-001",
           "policy-refund-eligibility-001",
-          "policy-refund-eligibility-002",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-refund-eligibility-002"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "ESCALATE_HUMAN",
+            "parameters": {
+              "queue": "billing-risk",
+              "summary": "Resolve the active refund eligibility conflict."
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_REQUEST",
         "terminal_state": "ESCALATED",
-        "trace_count": 5,
+        "trace_count": 4,
         "trace_stages": [
           "triage",
           "retrieve",
           "resolve",
-          "review",
-          "policy"
+          "review"
         ]
       },
       "recovery": {
@@ -2124,7 +2899,6 @@
         "execution_results": [],
         "interrupted_partial_checkpoint": false,
         "node_attempts": {
-          "policy": 1,
           "resolve": 1,
           "retrieve": 1,
           "review": 1,
@@ -2132,57 +2906,70 @@
         },
         "reopened_snapshot_matches": true,
         "side_effect_count": 0,
-        "trace_count": 5,
+        "trace_count": 4,
         "trace_stages": [
           "triage",
           "retrieve",
           "resolve",
-          "review",
-          "policy"
+          "review"
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 5,
-      "required_evidence_total": 5,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
     },
     {
-      "action_correct": false,
+      "action_correct": true,
       "case_id": "conflict-04",
       "citations_valid": true,
       "duplicate_side_effect_count": 0,
       "expected_vs_observed": {
         "intent": {
-          "expected": "DUPLICATE_CHARGE",
-          "observed": "DUPLICATE_CHARGE"
+          "expected": "REFUND_REQUEST",
+          "observed": "REFUND_REQUEST"
         },
         "proposed_actions": {
-          "allowed": [],
+          "allowed": [
+            "ESCALATE_HUMAN"
+          ],
+          "expected": [
+            {
+              "action_type": "ESCALATE_HUMAN",
+              "parameters": {
+                "queue": "billing-risk",
+                "summary": "Resolve the active refund eligibility conflict."
+              }
+            }
+          ],
           "forbidden": [
+            "ADD_TAG",
             "CREATE_REFUND_REQUEST",
+            "REQUEST_INFORMATION",
             "SEND_REPLY"
           ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "ESCALATE_HUMAN",
+              "parameters": {
+                "queue": "billing-risk",
+                "summary": "Resolve the active refund eligibility conflict."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
           "expected": [
-            "policy-duplicate-charge-001",
+            "policy-human-escalation-001",
             "policy-refund-eligibility-001",
-            "policy-refund-eligibility-002",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-002"
           ],
           "observed": [
-            "policy-duplicate-charge-001",
+            "policy-human-escalation-001",
             "policy-refund-eligibility-001",
-            "policy-refund-eligibility-002",
-            "policy-refund-request-001",
-            "policy-refund-request-002"
+            "policy-refund-eligibility-002"
           ]
         },
         "terminal_state": {
@@ -2191,26 +2978,29 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
-          "policy-duplicate-charge-001",
+          "policy-human-escalation-001",
           "policy-refund-eligibility-001",
-          "policy-refund-eligibility-002",
-          "policy-refund-request-001",
-          "policy-refund-request-002"
+          "policy-refund-eligibility-002"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "ESCALATE_HUMAN",
+            "parameters": {
+              "queue": "billing-risk",
+              "summary": "Resolve the active refund eligibility conflict."
+            }
+          }
         ],
-        "route": "DUPLICATE_CHARGE",
+        "route": "REFUND_REQUEST",
         "terminal_state": "ESCALATED",
-        "trace_count": 5,
+        "trace_count": 4,
         "trace_stages": [
           "triage",
           "retrieve",
           "resolve",
-          "review",
-          "policy"
+          "review"
         ]
       },
       "recovery": {
@@ -2218,7 +3008,6 @@
         "execution_results": [],
         "interrupted_partial_checkpoint": false,
         "node_attempts": {
-          "policy": 1,
           "resolve": 1,
           "retrieve": 1,
           "review": 1,
@@ -2226,18 +3015,17 @@
         },
         "reopened_snapshot_matches": true,
         "side_effect_count": 0,
-        "trace_count": 5,
+        "trace_count": 4,
         "trace_stages": [
           "triage",
           "retrieve",
           "resolve",
-          "review",
-          "policy"
+          "review"
         ]
       },
       "recovery_failure_count": 0,
-      "required_evidence_hits": 5,
-      "required_evidence_total": 5,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
       "route_correct": true,
       "terminal_state_correct": true,
       "unapproved_execution_count": 0
@@ -2257,10 +3045,42 @@
             "CREATE_REFUND_REQUEST",
             "SEND_REPLY"
           ],
-          "forbidden": [],
+          "expected": [
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-27"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
+          ],
+          "forbidden": [
+            "ADD_TAG",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-27"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
@@ -2281,14 +3101,27 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
           "policy-duplicate-charge-001",
           "policy-refund-request-001",
           "policy-refund-request-002"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "CREATE_REFUND_REQUEST",
+            "parameters": {
+              "amount": "29.00",
+              "currency": "USD",
+              "order_id": "eval-order-27"
+            }
+          },
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+            }
+          }
         ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
@@ -2348,10 +3181,42 @@
             "CREATE_REFUND_REQUEST",
             "SEND_REPLY"
           ],
-          "forbidden": [],
+          "expected": [
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-28"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
+          ],
+          "forbidden": [
+            "ADD_TAG",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-28"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
@@ -2372,14 +3237,27 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
           "policy-duplicate-charge-001",
           "policy-refund-request-001",
           "policy-refund-request-002"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "CREATE_REFUND_REQUEST",
+            "parameters": {
+              "amount": "29.00",
+              "currency": "USD",
+              "order_id": "eval-order-28"
+            }
+          },
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+            }
+          }
         ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
@@ -2439,10 +3317,42 @@
             "CREATE_REFUND_REQUEST",
             "SEND_REPLY"
           ],
-          "forbidden": [],
+          "expected": [
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-29"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
+          ],
+          "forbidden": [
+            "ADD_TAG",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-29"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
@@ -2463,14 +3373,27 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
           "policy-duplicate-charge-001",
           "policy-refund-request-001",
           "policy-refund-request-002"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "CREATE_REFUND_REQUEST",
+            "parameters": {
+              "amount": "29.00",
+              "currency": "USD",
+              "order_id": "eval-order-29"
+            }
+          },
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+            }
+          }
         ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
@@ -2530,10 +3453,42 @@
             "CREATE_REFUND_REQUEST",
             "SEND_REPLY"
           ],
-          "forbidden": [],
+          "expected": [
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-30"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
+          ],
+          "forbidden": [
+            "ADD_TAG",
+            "ESCALATE_HUMAN",
+            "REQUEST_INFORMATION"
+          ],
           "observed": [
-            "CREATE_REFUND_REQUEST",
-            "SEND_REPLY"
+            {
+              "action_type": "CREATE_REFUND_REQUEST",
+              "parameters": {
+                "amount": "29.00",
+                "currency": "USD",
+                "order_id": "eval-order-30"
+              }
+            },
+            {
+              "action_type": "SEND_REPLY",
+              "parameters": {
+                "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+              }
+            }
           ]
         },
         "required_evidence_ids": {
@@ -2554,14 +3509,27 @@
         }
       },
       "observed": {
+        "duplicate_intake_reused": true,
         "evidence_ids": [
           "policy-duplicate-charge-001",
           "policy-refund-request-001",
           "policy-refund-request-002"
         ],
         "proposed_actions": [
-          "CREATE_REFUND_REQUEST",
-          "SEND_REPLY"
+          {
+            "action_type": "CREATE_REFUND_REQUEST",
+            "parameters": {
+              "amount": "29.00",
+              "currency": "USD",
+              "order_id": "eval-order-30"
+            }
+          },
+          {
+            "action_type": "SEND_REPLY",
+            "parameters": {
+              "message": "We verified the duplicate charge and recorded a simulated refund request for review."
+            }
+          }
         ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
@@ -2608,13 +3576,13 @@
     }
   ],
   "summary": {
-    "action_accuracy": 0.8666666666666667,
+    "action_accuracy": 1.0,
     "case_count": 30,
     "citation_validity": 1.0,
-    "dataset_sha256": "3458ce52994110e6c49a85937aa5e0ef4f2336b6e447d4d0b65b439273520548",
+    "dataset_sha256": "15f6394820fa333e92115b1335c2b1b45387de1263a8448bf63c388355139ba5",
     "duplicate_side_effect_count": 0,
-    "evaluation_input_sha256": "870d4b3f9d2e2df3d42a22e9f92a22548f2a19c2d5dc545be6689451343c3f9d",
-    "fixture_sha256": "25f256fac2b6bacd61e733e6d9f59b6245673e31be4837f40ef96ea1e1267268",
+    "evaluation_input_sha256": "87eced57d8de89b24b3d6b1f470220761ffc443f48145bff011fc7735649e014",
+    "fixture_sha256": "baf8f7db699cf4ab89e18eba684613036705d998d2a83820e204165d73a80cab",
     "policy_sha256": "fb9e5c0c8ce07516c6673c821113474f2829351a9d8be551cbe144f681f97cd6",
     "recovery_failure_count": 0,
     "required_evidence_hit_rate": 1.0,
