@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
@@ -62,6 +63,14 @@ class SupportFlowService:
         runtime_directory: Path | None = None,
     ) -> SupportFlowService:
         current = (as_of or datetime.now(UTC)).astimezone(UTC)
+        if (
+            runtime_directory is not None
+            and os.environ.get("LANGGRAPH_STRICT_MSGPACK", "").strip().lower()
+            != "true"
+        ):
+            raise RuntimeError(
+                "Durable checkpoints require LANGGRAPH_STRICT_MSGPACK=true"
+            )
         documents = load_policy_documents(policy_directory)
         uncached_chunks = build_policy_chunks(documents)
         provider = (
@@ -265,8 +274,15 @@ class SupportFlowService:
             state = TicketState.COMPLETED
         elif decision is not None and decision.outcome == "block":
             state = TicketState.BLOCKED
-        else:
+        elif (
+            decision is not None
+            and decision.outcome == "allow"
+            and values.get("proposal") is not None
+            and values.get("risk_review") is not None
+        ):
             state = TicketState.WAITING_APPROVAL
+        else:
+            state = TicketState.NEEDS_ATTENTION
         return RunSnapshot(
             run_id=run_id,
             current_state=state,
@@ -381,4 +397,15 @@ class SupportFlowService:
     def resume(self, run_id: str) -> RunSnapshot:
         if not self.repository.run_exists(run_id):
             raise KeyError(f"Unknown run_id: {run_id}")
-        return self._snapshot(run_id)
+        config = self._config(run_id)
+        checkpoint = self.graph.compiled.get_state(config)
+        recoverable_nodes = {"triage", "retrieve", "resolve", "review", "policy"}
+        if any(
+            node_name in recoverable_nodes
+            and self.repository.load_node_result(run_id, node_name) is not None
+            for node_name in checkpoint.next
+        ):
+            self.graph.compiled.invoke(None, config)
+        snapshot = self._snapshot(run_id)
+        self.repository.mark_run_state(snapshot.run_id, snapshot.current_state.value)
+        return snapshot

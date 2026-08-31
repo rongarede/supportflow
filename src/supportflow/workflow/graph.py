@@ -106,10 +106,30 @@ class SupportFlowGraph:
             )
         return {**output, "trace": [*state.get("trace", []), event]}
 
+    def _cached_node_result(
+        self, state: WorkflowState, node_name: str
+    ) -> dict | None:
+        if self.repository is None:
+            return None
+        persisted = self.repository.load_node_result(state["run_id"], node_name)
+        if persisted is None:
+            return None
+        output, event = persisted
+        existing_trace = state.get("trace", [])
+        recovered_trace = (
+            existing_trace
+            if event in existing_trace
+            else [*existing_trace, event]
+        )
+        return {**output, "trace": recovered_trace}
+
     def _compile(self):
         builder = StateGraph(WorkflowState)
 
         def triage_node(state: WorkflowState) -> dict:
+            cached = self._cached_node_result(state, "triage")
+            if cached is not None:
+                return cached
             try:
                 result = self.triage.run(state["ticket"])
             except ModelExhausted as error:
@@ -124,6 +144,9 @@ class SupportFlowGraph:
             )
 
         def retrieve_node(state: WorkflowState) -> dict:
+            cached = self._cached_node_result(state, "retrieve")
+            if cached is not None:
+                return cached
             ticket = state["ticket"]
             try:
                 evidence = self.retriever.retrieve(
@@ -144,6 +167,9 @@ class SupportFlowGraph:
             )
 
         def resolve_node(state: WorkflowState) -> dict:
+            cached = self._cached_node_result(state, "resolve")
+            if cached is not None:
+                return cached
             try:
                 proposal = self.resolution.run(state["ticket"], state["evidence"])
             except ModelExhausted as error:
@@ -158,6 +184,9 @@ class SupportFlowGraph:
             )
 
         def review_node(state: WorkflowState) -> dict:
+            cached = self._cached_node_result(state, "review")
+            if cached is not None:
+                return cached
             try:
                 review = self.reviewer.run(state["ticket"], state["proposal"], state["evidence"])
             except ModelExhausted as error:
@@ -172,6 +201,9 @@ class SupportFlowGraph:
             )
 
         def policy_node(state: WorkflowState) -> dict:
+            cached = self._cached_node_result(state, "policy")
+            if cached is not None:
+                return cached
             decision = self.gate.evaluate(state["ticket"], state["evidence"], state["proposal"], state["risk_review"])
             next_node = (
                 "human_approval"

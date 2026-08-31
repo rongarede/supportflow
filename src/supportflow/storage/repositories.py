@@ -9,7 +9,17 @@ from uuid import uuid4
 import numpy as np
 from pydantic import BaseModel
 
-from supportflow.domain.models import ApprovalRecord, ExecutionResult, Ticket, TraceEvent
+from supportflow.domain.models import (
+    ApprovalRecord,
+    EvidenceBundle,
+    ExecutionResult,
+    PolicyDecision,
+    ResolutionProposal,
+    RiskReview,
+    Ticket,
+    TraceEvent,
+    TriageResult,
+)
 from supportflow.rag.documents import PolicyChunk
 from supportflow.storage.database import SupportFlowDatabase
 
@@ -142,6 +152,44 @@ class SupportFlowRepository:
             (run_id,),
         ).fetchall()
         return {row["node_name"]: row["attempts"] for row in rows}
+
+    def load_node_result(
+        self, run_id: str, node_name: str
+    ) -> tuple[dict[str, BaseModel], TraceEvent] | None:
+        output_row = self.database.connection.execute(
+            "SELECT output_json FROM node_outputs WHERE run_id = ? AND node_name = ?",
+            (run_id, node_name),
+        ).fetchone()
+        if output_row is None:
+            return None
+        event_row = self.database.connection.execute(
+            "SELECT stage, detail, occurred_at FROM trace_events "
+            "WHERE run_id = ? AND stage = ? ORDER BY rowid DESC LIMIT 1",
+            (run_id, node_name),
+        ).fetchone()
+        if event_row is None:
+            raise RuntimeError(
+                f"Persisted node output has no matching Trace event: {run_id}/{node_name}"
+            )
+        output_types: dict[str, tuple[str, type[BaseModel]]] = {
+            "triage": ("triage", TriageResult),
+            "retrieve": ("evidence", EvidenceBundle),
+            "resolve": ("proposal", ResolutionProposal),
+            "review": ("risk_review", RiskReview),
+            "policy": ("policy_decision", PolicyDecision),
+        }
+        try:
+            output_key, output_type = output_types[node_name]
+        except KeyError as error:
+            raise ValueError(f"Node output cannot be reconciled: {node_name}") from error
+        raw_output = json.loads(output_row["output_json"])
+        output = {output_key: output_type.model_validate(raw_output[output_key])}
+        event = TraceEvent(
+            stage=event_row["stage"],
+            detail=event_row["detail"],
+            occurred_at=event_row["occurred_at"],
+        )
+        return output, event
 
     def mark_run_state(self, run_id: str, state: str, next_node: str | None = None) -> None:
         with self.database.immediate() as connection:

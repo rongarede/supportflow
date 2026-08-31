@@ -10,7 +10,7 @@ import sys
 
 from supportflow.domain.models import Ticket
 from supportflow.settings import (
-    DEFAULT_RUNTIME_DIRECTORY,
+    DEFAULT_RESTART_DEMO_DIRECTORY,
     checkpoint_database_path,
     runtime_database_path,
 )
@@ -83,6 +83,10 @@ def _restart_approve(
 
 def demo_restart(runtime_directory: Path) -> None:
     runtime_directory = runtime_directory.resolve()
+    if runtime_directory.name != "demo-restart":
+        raise ValueError(
+            "demo-restart may only clear a dedicated demo-restart runtime"
+        )
     runtime_directory.mkdir(parents=True, exist_ok=True)
     for database_path in (
         runtime_database_path(runtime_directory),
@@ -182,7 +186,7 @@ def main() -> None:
             "_restart-approve",
         ],
     )
-    parser.add_argument("--runtime", type=Path, default=DEFAULT_RUNTIME_DIRECTORY)
+    parser.add_argument("--runtime", type=Path, default=DEFAULT_RESTART_DEMO_DIRECTORY)
     parser.add_argument("--run-id")
     parser.add_argument("--proposal-hash")
     args = parser.parse_args()
