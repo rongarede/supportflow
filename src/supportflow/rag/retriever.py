@@ -20,10 +20,19 @@ def reciprocal_rank_fusion(vector_ids: list[str], bm25_ids: list[str], limit: in
 
 
 class RagRetriever:
-    def __init__(self, chunks: list[PolicyChunk], embedding_provider: EmbeddingProvider) -> None:
+    def __init__(
+        self,
+        chunks: list[PolicyChunk],
+        embedding_provider: EmbeddingProvider,
+        embeddings: np.ndarray | None = None,
+    ) -> None:
         self.chunks = chunks
         self.embedding_provider = embedding_provider
-        self._embeddings = embedding_provider.embed([chunk.text for chunk in chunks])
+        self._embeddings = (
+            embeddings
+            if embeddings is not None
+            else embedding_provider.embed([chunk.text for chunk in chunks])
+        )
 
     def retrieve(self, query: str, intent: str, as_of: datetime, top_k: int = 5) -> EvidenceBundle:
         active_pairs = [

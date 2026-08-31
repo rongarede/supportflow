@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TypedDict
 
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.graph import END, START, StateGraph
@@ -13,9 +14,10 @@ from supportflow.agents.resolution import ResolutionAgent
 from supportflow.agents.reviewer import RiskReviewerAgent
 from supportflow.agents.triage import TriageAgent
 from supportflow.domain.models import ApprovalInput, ApprovalRecord, RunError
-from supportflow.execution.executor import InMemoryExecutor
+from supportflow.execution.executor import DurableExecutor, InMemoryExecutor
 from supportflow.policy.gate import PolicyGate
 from supportflow.rag.retriever import RagRetriever
+from supportflow.storage.repositories import SupportFlowRepository
 from supportflow.workflow.nodes import trace
 
 
@@ -44,8 +46,10 @@ class SupportFlowGraph:
         resolution: ResolutionAgent,
         reviewer: RiskReviewerAgent,
         gate: PolicyGate,
-        executor: InMemoryExecutor,
+        executor: InMemoryExecutor | DurableExecutor,
         as_of: datetime | None = None,
+        checkpointer: BaseCheckpointSaver | None = None,
+        repository: SupportFlowRepository | None = None,
     ) -> None:
         self.triage = triage
         self.retriever = retriever
@@ -53,6 +57,7 @@ class SupportFlowGraph:
         self.reviewer = reviewer
         self.gate = gate
         self.executor = executor
+        self.repository = repository
         self.as_of = (as_of or datetime.now(UTC)).astimezone(UTC)
         domain_type_names = (
             "Ticket",
@@ -70,7 +75,7 @@ class SupportFlowGraph:
             "ExecutionResult",
             "RunError",
         )
-        self.checkpointer = MemorySaver(
+        self.checkpointer = checkpointer or MemorySaver(
             serde=JsonPlusSerializer(
                 allowed_msgpack_modules=[
                     ("supportflow.domain.models", type_name) for type_name in domain_type_names
@@ -79,9 +84,27 @@ class SupportFlowGraph:
         )
         self.compiled = self._compile()
 
-    @staticmethod
-    def _append(state: WorkflowState, stage: str, detail: str) -> list:
-        return [*state.get("trace", []), trace(stage, detail)]
+    def _node_result(
+        self,
+        state: WorkflowState,
+        node_name: str,
+        output: dict,
+        detail: str,
+        *,
+        current_state: str,
+        next_node: str | None,
+    ) -> dict:
+        event = trace(node_name, detail)
+        if self.repository is not None:
+            self.repository.record_node_result(
+                state["run_id"],
+                node_name,
+                output,
+                event,
+                current_state=current_state,
+                next_node=next_node,
+            )
+        return {**output, "trace": [*state.get("trace", []), event]}
 
     def _compile(self):
         builder = StateGraph(WorkflowState)
@@ -91,7 +114,14 @@ class SupportFlowGraph:
                 result = self.triage.run(state["ticket"])
             except ModelExhausted as error:
                 return self._needs_attention(state, "triage", error)
-            return {"triage": result, "trace": self._append(state, "triage", result.intent.value)}
+            return self._node_result(
+                state,
+                "triage",
+                {"triage": result},
+                result.intent.value,
+                current_state="TRIAGED",
+                next_node=None if result.missing_fields else "retrieve",
+            )
 
         def retrieve_node(state: WorkflowState) -> dict:
             ticket = state["ticket"]
@@ -104,25 +134,58 @@ class SupportFlowGraph:
                 )
             except ValueError as error:
                 return self._needs_attention(state, "retrieve", error)
-            return {"evidence": evidence, "trace": self._append(state, "retrieve", "active policy evidence retrieved")}
+            return self._node_result(
+                state,
+                "retrieve",
+                {"evidence": evidence},
+                "active policy evidence retrieved",
+                current_state="EVIDENCE_READY",
+                next_node="resolve",
+            )
 
         def resolve_node(state: WorkflowState) -> dict:
             try:
                 proposal = self.resolution.run(state["ticket"], state["evidence"])
             except ModelExhausted as error:
                 return self._needs_attention(state, "resolve", error)
-            return {"proposal": proposal, "trace": self._append(state, "resolve", "resolution proposal created")}
+            return self._node_result(
+                state,
+                "resolve",
+                {"proposal": proposal},
+                "resolution proposal created",
+                current_state="RESOLUTION_PROPOSED",
+                next_node="review",
+            )
 
         def review_node(state: WorkflowState) -> dict:
             try:
                 review = self.reviewer.run(state["ticket"], state["proposal"], state["evidence"])
             except ModelExhausted as error:
                 return self._needs_attention(state, "review", error)
-            return {"risk_review": review, "trace": self._append(state, "review", "risk review completed")}
+            return self._node_result(
+                state,
+                "review",
+                {"risk_review": review},
+                "risk review completed",
+                current_state="RISK_REVIEWED",
+                next_node="policy",
+            )
 
         def policy_node(state: WorkflowState) -> dict:
             decision = self.gate.evaluate(state["ticket"], state["evidence"], state["proposal"], state["risk_review"])
-            return {"policy_decision": decision, "trace": self._append(state, "policy", decision.outcome)}
+            next_node = (
+                "human_approval"
+                if decision.outcome == "allow" and not state["risk_review"].escalated
+                else None
+            )
+            return self._node_result(
+                state,
+                "policy",
+                {"policy_decision": decision},
+                decision.outcome,
+                current_state="POLICY_CHECKED",
+                next_node=next_node,
+            )
 
         def human_approval_node(state: WorkflowState) -> dict:
             payload = interrupt({"run_id": state["run_id"], "proposal_hash": state["proposal"].proposal_hash})
@@ -130,15 +193,24 @@ class SupportFlowGraph:
             approval = ApprovalRecord(
                 run_id=state["run_id"], proposal_hash=input_value.proposal_hash, reviewer=input_value.reviewer, approved_at=datetime.now(UTC)
             )
+            event = trace("human_approval", input_value.reviewer)
+            if self.repository is not None:
+                approval = self.repository.save_approval(approval)
+                self.repository.trace.append(state["run_id"], event)
+                self.repository.mark_run_state(state["run_id"], "APPROVED", "execute")
             return {
                 "approval": approval,
                 "approvals": [*state.get("approvals", []), approval],
-                "trace": self._append(state, "human_approval", input_value.reviewer),
+                "trace": [*state.get("trace", []), event],
             }
 
         def execute_node(state: WorkflowState) -> dict:
             results = self.executor.execute(state["run_id"], state["proposal"], state.get("approval"))
-            return {"execution_results": results, "trace": self._append(state, "execute", "simulated actions completed")}
+            event = trace("execute", "simulated actions completed")
+            if self.repository is not None:
+                self.repository.trace.append(state["run_id"], event)
+                self.repository.mark_run_state(state["run_id"], "COMPLETED")
+            return {"execution_results": results, "trace": [*state.get("trace", []), event]}
 
         def route_after_triage(state: WorkflowState) -> str:
             if state.get("terminal_state") or state["triage"].missing_fields:
@@ -178,10 +250,14 @@ class SupportFlowGraph:
         return builder.compile(checkpointer=self.checkpointer)
 
     def _needs_attention(self, state: WorkflowState, stage: str, error: Exception) -> dict:
+        event = trace(stage, "model output exhausted")
+        if self.repository is not None:
+            self.repository.trace.append(state["run_id"], event)
+            self.repository.mark_run_state(state["run_id"], "NEEDS_ATTENTION")
         return {
             "terminal_state": "NEEDS_ATTENTION",
             "errors": [*state.get("errors", []), RunError(code="MODEL_EXHAUSTED", message=str(error))],
-            "trace": self._append(state, stage, "model output exhausted"),
+            "trace": [*state.get("trace", []), event],
         }
 
     def revise(
@@ -198,6 +274,14 @@ class SupportFlowGraph:
             decision = self.gate.evaluate(state["ticket"], state["evidence"], proposal, review)
             terminal_state = "ESCALATED" if revision_count > 2 else None
             detail = "revision limit reached" if terminal_state else f"revision requested by {reviewer}"
+            event = trace("modify", detail)
+            if self.repository is not None:
+                for approval in approvals:
+                    self.repository.save_approval(approval)
+                self.repository.trace.append(state["run_id"], event)
+                self.repository.mark_run_state(
+                    state["run_id"], terminal_state or "WAITING_APPROVAL"
+                )
             self.compiled.update_state(
                 config,
                 {
@@ -207,7 +291,7 @@ class SupportFlowGraph:
                     "approvals": approvals,
                     "revision_count": revision_count,
                     "terminal_state": terminal_state,
-                    "trace": self._append(state, "modify", detail),
+                    "trace": [*state.get("trace", []), event],
                 },
             )
         except ModelExhausted as error:
@@ -215,10 +299,28 @@ class SupportFlowGraph:
 
     def set_terminal(self, config: dict, state: str, reason: str, reviewer: str) -> None:
         values = self.compiled.get_state(config).values
+        event = trace(state.lower(), f"{reviewer}: {reason}")
+        if self.repository is not None:
+            self.repository.trace.append(values["run_id"], event)
+            self.repository.mark_run_state(values["run_id"], state)
         self.compiled.update_state(
             config,
             {
                 "terminal_state": state,
-                "trace": self._append(values, state.lower(), f"{reviewer}: {reason}"),
+                "trace": [*values.get("trace", []), event],
+            },
+        )
+
+    def record_execution_replay(self, config: dict, results: list) -> None:
+        values = self.compiled.get_state(config).values
+        event = trace("execute", "duplicate simulated actions skipped")
+        if self.repository is not None:
+            self.repository.trace.append(values["run_id"], event)
+            self.repository.mark_run_state(values["run_id"], "COMPLETED")
+        self.compiled.update_state(
+            config,
+            {
+                "execution_results": results,
+                "trace": [*values.get("trace", []), event],
             },
         )

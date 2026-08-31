@@ -145,9 +145,18 @@ class ApprovalInput(StrictModel):
 
 
 class ExecutionResult(StrictModel):
+    idempotency_key: str
     action_type: ActionType
-    status: Literal["SIMULATED_SUCCESS"]
+    status: Literal["succeeded", "failed", "skipped_duplicate"]
     reference: str
+    simulated_payload: dict[str, Any]
+    executed_at: datetime
+    error: str | None = None
+
+    @model_validator(mode="after")
+    def normalise_executed_at(self) -> ExecutionResult:
+        self.executed_at = _utc(self.executed_at)
+        return self
 
 
 class TraceEvent(StrictModel):
@@ -189,6 +198,7 @@ class RunSnapshot(StrictModel):
     execution_results: list[ExecutionResult] = Field(default_factory=list)
     trace: list[TraceEvent] = Field(default_factory=list)
     errors: list[RunError] = Field(default_factory=list)
+    node_attempts: dict[str, int] = Field(default_factory=dict)
 
 
 class ApprovalMismatch(ValueError):

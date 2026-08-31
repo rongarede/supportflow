@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
+from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.types import Command
 
 from supportflow.agents.fake import FakeStructuredModel
 from supportflow.agents.resolution import ResolutionAgent
 from supportflow.agents.reviewer import RiskReviewerAgent
 from supportflow.agents.triage import TriageAgent
+from supportflow.domain.hashing import proposal_hash as canonical_proposal_hash
 from supportflow.domain.models import (
     ActionProposal,
     ApprovalInput,
@@ -22,19 +26,32 @@ from supportflow.domain.models import (
     TicketState,
     TriageResult,
 )
-from supportflow.execution.executor import InMemoryExecutor
+from supportflow.execution.executor import DurableExecutor
 from supportflow.policy.gate import PolicyGate
 from supportflow.rag.documents import load_policy_documents
 from supportflow.rag.embeddings import FixedEmbeddingProvider, SentenceTransformerEmbeddingProvider
-from supportflow.rag.index import build_policy_chunks
+from supportflow.rag.index import build_persisted_policy_index, build_policy_chunks
 from supportflow.rag.retriever import RagRetriever
-from supportflow.settings import DEFAULT_POLICY_DIRECTORY
+from supportflow.settings import (
+    DEFAULT_POLICY_DIRECTORY,
+    checkpoint_database_path,
+    runtime_database_path,
+)
+from supportflow.storage.database import SupportFlowDatabase
+from supportflow.storage.repositories import SupportFlowRepository
 from supportflow.workflow.graph import SupportFlowGraph
 
 
 class SupportFlowService:
-    def __init__(self, graph: SupportFlowGraph) -> None:
+    def __init__(
+        self,
+        graph: SupportFlowGraph,
+        repository: SupportFlowRepository,
+        checkpoint_connection: sqlite3.Connection | None = None,
+    ) -> None:
         self.graph = graph
+        self.repository = repository
+        self._checkpoint_connection = checkpoint_connection
 
     @classmethod
     def demo(
@@ -42,15 +59,58 @@ class SupportFlowService:
         as_of: datetime | None = None,
         policy_directory: Path = DEFAULT_POLICY_DIRECTORY,
         use_sentence_transformer: bool = False,
+        runtime_directory: Path | None = None,
     ) -> SupportFlowService:
         current = (as_of or datetime.now(UTC)).astimezone(UTC)
-        chunks = build_policy_chunks(load_policy_documents(policy_directory))
+        documents = load_policy_documents(policy_directory)
+        uncached_chunks = build_policy_chunks(documents)
         provider = (
             SentenceTransformerEmbeddingProvider()
             if use_sentence_transformer
-            else FixedEmbeddingProvider({chunk.text: [1.0, 0.0] for chunk in chunks})
+            else FixedEmbeddingProvider({chunk.text: [1.0, 0.0] for chunk in uncached_chunks})
         )
-        retriever = RagRetriever(chunks, provider)
+        checkpoint_connection = None
+        checkpointer = None
+        if runtime_directory is None:
+            database = SupportFlowDatabase(":memory:")
+        else:
+            runtime_directory.mkdir(parents=True, exist_ok=True)
+            database = SupportFlowDatabase(runtime_database_path(runtime_directory))
+            checkpoint_connection = sqlite3.connect(
+                checkpoint_database_path(runtime_directory),
+                check_same_thread=False,
+                timeout=30,
+            )
+            checkpoint_connection.execute("PRAGMA busy_timeout = 30000")
+            domain_type_names = (
+                "Ticket",
+                "TraceEvent",
+                "Intent",
+                "TriageResult",
+                "EvidenceItem",
+                "EvidenceBundle",
+                "ActionType",
+                "ActionProposal",
+                "ResolutionProposal",
+                "RiskReview",
+                "PolicyDecision",
+                "ApprovalRecord",
+                "ExecutionResult",
+                "RunError",
+            )
+            checkpointer = SqliteSaver(
+                checkpoint_connection,
+                serde=JsonPlusSerializer(
+                    pickle_fallback=False,
+                    allowed_msgpack_modules=[
+                        ("supportflow.domain.models", type_name)
+                        for type_name in domain_type_names
+                    ],
+                ),
+            )
+        repository = SupportFlowRepository(database)
+        chunks, embeddings = build_persisted_policy_index(documents, provider, repository)
+        retriever = RagRetriever(chunks, provider, embeddings=embeddings)
         evidence_ids_by_heading = {
             chunk.heading: chunk.evidence_id for chunk in chunks if chunk.document.active_at(current)
         }
@@ -179,10 +239,12 @@ class SupportFlowService:
             resolution=ResolutionAgent(model),
             reviewer=RiskReviewerAgent(model),
             gate=PolicyGate(),
-            executor=InMemoryExecutor(),
+            executor=DurableExecutor(repository),
             as_of=current,
+            checkpointer=checkpointer,
+            repository=repository,
         )
-        return cls(graph)
+        return cls(graph, repository, checkpoint_connection)
 
     @staticmethod
     def _config(run_id: str) -> dict:
@@ -219,22 +281,39 @@ class SupportFlowService:
             execution_results=values.get("execution_results", []),
             trace=values.get("trace", []),
             errors=values.get("errors", []),
+            node_attempts=self.repository.node_attempts(run_id),
         )
 
     def submit(self, ticket: Ticket) -> RunSnapshot:
         run_id = str(uuid4())
+        self.repository.create_run(run_id, ticket)
         self.graph.compiled.invoke({"run_id": run_id, "ticket": ticket, "trace": []}, self._config(run_id))
-        return self._snapshot(run_id)
+        snapshot = self._snapshot(run_id)
+        self.repository.mark_run_state(snapshot.run_id, snapshot.current_state.value)
+        return snapshot
 
     def approve(self, run_id: str, proposal_hash: str, reviewer: str) -> RunSnapshot:
         waiting = self._snapshot(run_id)
-        if waiting.current_state != TicketState.WAITING_APPROVAL or waiting.proposal is None:
+        if waiting.proposal is None:
             raise ApprovalMismatch("Run is not waiting for an approvable proposal")
-        if waiting.proposal.proposal_hash != proposal_hash:
+        canonical_hash = canonical_proposal_hash(waiting.proposal)
+        if (
+            waiting.proposal.proposal_hash != canonical_hash
+            or proposal_hash != canonical_hash
+        ):
             raise ApprovalMismatch("Approval proposal hash does not match the reviewed proposal")
+        if waiting.current_state == TicketState.COMPLETED:
+            approval = self.repository.get_approval(run_id, canonical_hash)
+            results = self.graph.executor.execute(run_id, waiting.proposal, approval)
+            self.graph.record_execution_replay(self._config(run_id), results)
+            return self._snapshot(run_id)
+        if waiting.current_state != TicketState.WAITING_APPROVAL:
+            raise ApprovalMismatch("Run is not waiting for an approvable proposal")
         approval = ApprovalInput(proposal_hash=proposal_hash, reviewer=reviewer)
         self.graph.compiled.invoke(Command(resume=approval.model_dump(mode="json")), self._config(run_id))
-        return self._snapshot(run_id)
+        snapshot = self._snapshot(run_id)
+        self.repository.mark_run_state(snapshot.run_id, snapshot.current_state.value)
+        return snapshot
 
     def modify(self, run_id: str, edits: dict[str, str], reviewer: str) -> RunSnapshot:
         waiting = self._snapshot(run_id)
@@ -297,4 +376,9 @@ class SupportFlowService:
         return self._snapshot(run_id)
 
     def snapshot(self, run_id: str) -> RunSnapshot:
+        return self._snapshot(run_id)
+
+    def resume(self, run_id: str) -> RunSnapshot:
+        if not self.repository.run_exists(run_id):
+            raise KeyError(f"Unknown run_id: {run_id}")
         return self._snapshot(run_id)

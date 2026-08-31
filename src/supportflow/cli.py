@@ -2,13 +2,23 @@ from __future__ import annotations
 
 import argparse
 from datetime import UTC, datetime
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
 
 from supportflow.domain.models import Ticket
+from supportflow.settings import (
+    DEFAULT_RUNTIME_DIRECTORY,
+    checkpoint_database_path,
+    runtime_database_path,
+)
 from supportflow.workflow.service import SupportFlowService
 
 
-def demo_golden() -> None:
-    ticket = Ticket(
+def _golden_ticket() -> Ticket:
+    return Ticket(
         ticket_id="ticket-duplicate-001",
         customer_id="customer-001",
         subject="I was charged twice",
@@ -16,8 +26,12 @@ def demo_golden() -> None:
         order_id="order-100",
         amount="29.00",
         currency="USD",
-        created_at=datetime.now(UTC),
+        created_at=datetime(2026, 8, 31, tzinfo=UTC),
     )
+
+
+def demo_golden() -> None:
+    ticket = _golden_ticket()
     service = SupportFlowService.demo(use_sentence_transformer=True)
     waiting = service.submit(ticket)
     completed = service.approve(waiting.run_id, waiting.proposal.proposal_hash, "portfolio-owner")
@@ -27,6 +41,91 @@ def demo_golden() -> None:
     print(f"approval: {completed.approval.reviewer}")
     print(f"final_state: {completed.current_state.value}")
     print("simulated_actions: " + ", ".join(f"{item.action_type.value}={item.status}" for item in completed.execution_results))
+
+
+def _restart_submit(runtime_directory: Path) -> None:
+    service = SupportFlowService.demo(
+        as_of=datetime(2026, 8, 31, tzinfo=UTC),
+        runtime_directory=runtime_directory,
+    )
+    waiting = service.submit(_golden_ticket())
+    print(
+        json.dumps(
+            {
+                "pid": os.getpid(),
+                "run_id": waiting.run_id,
+                "proposal_hash": waiting.proposal.proposal_hash,
+            }
+        )
+    )
+
+
+def _restart_approve(
+    runtime_directory: Path, run_id: str, approved_proposal_hash: str
+) -> None:
+    service = SupportFlowService.demo(
+        as_of=datetime(2026, 8, 31, tzinfo=UTC),
+        runtime_directory=runtime_directory,
+    )
+    resumed = service.resume(run_id)
+    result = service.approve(run_id, approved_proposal_hash, "portfolio-owner")
+    print(
+        json.dumps(
+            {
+                "pid": os.getpid(),
+                "resumed_state": resumed.current_state.value,
+                "statuses": [item.status for item in result.execution_results],
+                "stored_side_effects": service.repository.count_execution_side_effects(),
+            }
+        )
+    )
+
+
+def demo_restart(runtime_directory: Path) -> None:
+    runtime_directory = runtime_directory.resolve()
+    runtime_directory.mkdir(parents=True, exist_ok=True)
+    for database_path in (
+        runtime_database_path(runtime_directory),
+        checkpoint_database_path(runtime_directory),
+    ):
+        database_path.unlink(missing_ok=True)
+    environment = {**os.environ, "LANGGRAPH_STRICT_MSGPACK": "true"}
+
+    def run_child(command: str, *arguments: str) -> dict:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "supportflow.cli",
+                command,
+                "--runtime",
+                str(runtime_directory),
+                *arguments,
+            ],
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return json.loads(completed.stdout)
+
+    submitted = run_child("_restart-submit")
+    approval_arguments = (
+        "--run-id",
+        submitted["run_id"],
+        "--proposal-hash",
+        submitted["proposal_hash"],
+    )
+    first = run_child("_restart-approve", *approval_arguments)
+    repeated = run_child("_restart-approve", *approval_arguments)
+
+    print(f"submit_process: {submitted['pid']}")
+    print(f"approval_process: {first['pid']}")
+    print(f"repeat_process: {repeated['pid']}")
+    print(f"resumed_state: {first['resumed_state']}")
+    print("first_execution_statuses: " + ", ".join(first["statuses"]))
+    print("repeated_execution_statuses: " + ", ".join(repeated["statuses"]))
+    print(f"stored_side_effects: {repeated['stored_side_effects']}")
 
 
 def demo_safety() -> None:
@@ -73,12 +172,32 @@ def demo_safety() -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="supportflow")
-    parser.add_argument("command", choices=["demo-golden", "demo-safety"])
+    parser.add_argument(
+        "command",
+        choices=[
+            "demo-golden",
+            "demo-safety",
+            "demo-restart",
+            "_restart-submit",
+            "_restart-approve",
+        ],
+    )
+    parser.add_argument("--runtime", type=Path, default=DEFAULT_RUNTIME_DIRECTORY)
+    parser.add_argument("--run-id")
+    parser.add_argument("--proposal-hash")
     args = parser.parse_args()
     if args.command == "demo-golden":
         demo_golden()
-    if args.command == "demo-safety":
+    elif args.command == "demo-safety":
         demo_safety()
+    elif args.command == "demo-restart":
+        demo_restart(args.runtime)
+    elif args.command == "_restart-submit":
+        _restart_submit(args.runtime)
+    elif args.command == "_restart-approve":
+        if not args.run_id or not args.proposal_hash:
+            parser.error("_restart-approve requires --run-id and --proposal-hash")
+        _restart_approve(args.runtime, args.run_id, args.proposal_hash)
 
 
 if __name__ == "__main__":
