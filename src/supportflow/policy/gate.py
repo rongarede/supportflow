@@ -15,13 +15,14 @@ class PolicyGate:
     ) -> PolicyDecision:
         passed: list[str] = ["PG-001"]
         failed: list[str] = []
-        evidence_ids = {item.evidence_id for item in evidence.items}
+        available_evidence = [*evidence.items, *evidence.audit_items]
+        evidence_ids = {item.evidence_id for item in available_evidence}
         references_exist = set(proposal.evidence_refs) <= evidence_ids
         if references_exist:
             passed.append("PG-002")
         else:
             failed.append("PG-002")
-        referenced = [item for item in evidence.items if item.evidence_id in proposal.evidence_refs]
+        referenced = [item for item in available_evidence if item.evidence_id in proposal.evidence_refs]
         if references_exist:
             if all(item.active for item in referenced):
                 passed.append("PG-003")

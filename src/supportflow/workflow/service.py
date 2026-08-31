@@ -54,6 +54,9 @@ class SupportFlowService:
         evidence_ids_by_heading = {
             chunk.heading: chunk.evidence_id for chunk in chunks if chunk.document.active_at(current)
         }
+        audit_evidence_ids_by_heading = {
+            chunk.heading: chunk.evidence_id for chunk in chunks if not chunk.document.active_at(current)
+        }
         duplicate_charge_refs = [
             evidence_ids_by_heading["duplicate-charge-verification"],
             evidence_ids_by_heading["duplicate-charge-refund-request"],
@@ -142,6 +145,32 @@ class SupportFlowService:
                     escalated=True,
                     rationale="Potential account takeover requires a human investigator.",
                 ),
+                ("triage", "T-EXPIRED-001", 1): TriageResult(
+                    ticket_id="T-EXPIRED-001",
+                    intent="DUPLICATE_CHARGE",
+                    confidence=0.99,
+                    rationale="The ticket cites a previously applicable duplicate-charge rule.",
+                ),
+                ("resolution", "T-EXPIRED-001", 1): ResolutionProposal(
+                    ticket_id="T-EXPIRED-001",
+                    evidence_refs=[
+                        evidence_ids_by_heading["duplicate-charge-verification"],
+                        audit_evidence_ids_by_heading["duplicate-charge-refund-request"],
+                        evidence_ids_by_heading["refund-timing"],
+                    ],
+                    actions=[
+                        ActionProposal(
+                            action_type="CREATE_REFUND_REQUEST",
+                            params={"order_id": "order-100", "amount": "29.00", "currency": "USD"},
+                        ),
+                        ActionProposal(action_type="SEND_REPLY", params={"message": "We are reviewing the request."}),
+                    ],
+                    created_at=current,
+                ),
+                ("reviewer", "T-EXPIRED-001", 1): RiskReview(
+                    escalated=False,
+                    rationale="The cited refund rule has expired and needs a human decision.",
+                ),
             }
         )
         graph = SupportFlowGraph(
@@ -214,6 +243,11 @@ class SupportFlowService:
         reply_text = edits.get("reply_text")
         if not reply_text or set(edits) != {"reply_text"}:
             raise ValueError("Only a non-empty reply_text edit is supported")
+        reply_actions = [action for action in waiting.proposal.actions if action.action_type == "SEND_REPLY"]
+        if not reply_actions:
+            raise ValueError("Proposal has no editable reply")
+        if all(action.params["message"] == reply_text for action in reply_actions):
+            raise ValueError("reply_text must change the proposal")
         revised_actions = [
             ActionProposal(
                 action_type=action.action_type,
@@ -229,6 +263,8 @@ class SupportFlowService:
             actions=revised_actions,
             created_at=waiting.proposal.created_at,
         )
+        if revised.proposal_hash == waiting.proposal.proposal_hash:
+            raise ValueError("reply_text must change the proposal")
         superseded = ApprovalRecord(
             run_id=run_id,
             proposal_hash=waiting.proposal.proposal_hash,

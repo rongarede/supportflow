@@ -4,7 +4,14 @@ from datetime import UTC, datetime
 
 import pytest
 
-from supportflow.domain.models import ApprovalMismatch, Ticket
+from supportflow.domain.models import (
+    ActionProposal,
+    ApprovalMismatch,
+    ResolutionProposal,
+    RiskReview,
+    Ticket,
+    TriageResult,
+)
 from supportflow.workflow.service import SupportFlowService
 
 
@@ -45,6 +52,14 @@ def test_unsafe_paths_never_execute(safety_service, ticket_factory, ticket_id, e
     assert result.execution_results == []
 
 
+def test_expired_policy_citation_escalates_without_execution(safety_service, ticket_factory) -> None:
+    result = safety_service.submit(ticket_factory("T-EXPIRED-001"))
+
+    assert result.current_state == "ESCALATED"
+    assert "PG-003" in result.policy_decision.failed_rules
+    assert result.execution_results == []
+
+
 def test_modification_invalidates_old_approval(safety_service, duplicate_ticket) -> None:
     first = safety_service.submit(duplicate_ticket)
     old_hash = first.proposal.proposal_hash
@@ -60,6 +75,70 @@ def test_modification_invalidates_old_approval(safety_service, duplicate_ticket)
     assert revised.approvals[-1].status == "superseded"
     with pytest.raises(ApprovalMismatch):
         safety_service.approve(revised.run_id, old_hash, "portfolio-owner")
+
+
+def test_modification_rejects_identical_reply_without_superseding_approval(
+    safety_service, duplicate_ticket
+) -> None:
+    waiting = safety_service.submit(duplicate_ticket)
+    original_message = next(
+        action.params["message"]
+        for action in waiting.proposal.actions
+        if action.action_type == "SEND_REPLY"
+    )
+
+    with pytest.raises(ValueError, match="change the proposal"):
+        safety_service.modify(waiting.run_id, {"reply_text": original_message}, "portfolio-owner")
+
+    unchanged = safety_service.snapshot(waiting.run_id)
+    assert unchanged.current_state == "WAITING_APPROVAL"
+    assert unchanged.proposal.proposal_hash == waiting.proposal.proposal_hash
+    assert unchanged.approvals == []
+
+
+def test_modification_rejects_proposal_without_editable_reply(
+    safety_service, ticket_factory
+) -> None:
+    model = safety_service.graph.triage.model
+    ticket_id = "T-NO-REPLY-001"
+    evidence_ids_by_heading = {
+        chunk.heading: chunk.evidence_id
+        for chunk in safety_service.graph.retriever.chunks
+        if chunk.document.active_at(datetime(2026, 8, 31, tzinfo=UTC))
+    }
+    model.responses[("triage", ticket_id, 1)] = TriageResult(
+        ticket_id=ticket_id,
+        intent="DUPLICATE_CHARGE",
+        confidence=0.99,
+        rationale="The ticket describes a duplicate charge.",
+    )
+    model.responses[("resolution", ticket_id, 1)] = ResolutionProposal(
+        ticket_id=ticket_id,
+        evidence_refs=[
+            evidence_ids_by_heading["duplicate-charge-verification"],
+            evidence_ids_by_heading["duplicate-charge-refund-request"],
+        ],
+        actions=[
+            ActionProposal(
+                action_type="CREATE_REFUND_REQUEST",
+                params={"order_id": "order-100", "amount": "29.00", "currency": "USD"},
+            )
+        ],
+        created_at=datetime(2026, 8, 31, tzinfo=UTC),
+    )
+    model.responses[("reviewer", ticket_id, 1)] = RiskReview(
+        escalated=False,
+        rationale="The proposal is constrained to the active duplicate-charge rules.",
+    )
+    waiting = safety_service.submit(ticket_factory(ticket_id))
+
+    with pytest.raises(ValueError, match="editable reply"):
+        safety_service.modify(waiting.run_id, {"reply_text": "A revised reply."}, "portfolio-owner")
+
+    unchanged = safety_service.snapshot(waiting.run_id)
+    assert unchanged.current_state == "WAITING_APPROVAL"
+    assert unchanged.proposal.proposal_hash == waiting.proposal.proposal_hash
+    assert unchanged.approvals == []
 
 
 def test_rejection_and_escalation_never_execute(safety_service, duplicate_ticket) -> None:

@@ -75,6 +75,7 @@ class EvidenceItem(StrictModel):
 
 class EvidenceBundle(StrictModel):
     items: list[EvidenceItem] = Field(min_length=1)
+    audit_items: list[EvidenceItem] = Field(default_factory=list)
 
 
 class ActionProposal(StrictModel):

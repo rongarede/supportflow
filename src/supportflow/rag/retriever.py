@@ -62,5 +62,18 @@ class RagRetriever:
                     score=float(scores[list(active_chunks).index(chunk_by_id[evidence_id])]),
                 )
                 for evidence_id in fused
-            ]
+            ],
+            audit_items=[
+                EvidenceItem(
+                    evidence_id=chunk.evidence_id,
+                    document_id=chunk.document.document_id,
+                    version=chunk.document.version,
+                    heading=chunk.heading,
+                    content=chunk.text,
+                    active=False,
+                    score=0.0,
+                )
+                for chunk in self.chunks
+                if not chunk.document.active_at(as_of)
+            ],
         )
