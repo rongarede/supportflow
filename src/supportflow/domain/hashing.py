@@ -12,8 +12,10 @@ def _canonical_sha256(payload: object) -> str:
 
 
 def canonical_input_revision(ticket: Ticket) -> str:
-    """Derive a stable revision from the complete normalized intake payload."""
-    return _canonical_sha256(ticket.model_dump(mode="json"))
+    """Derive a stable revision from source content, not local ingestion time."""
+    return _canonical_sha256(
+        ticket.model_dump(mode="json", exclude={"created_at"})
+    )
 
 
 def proposal_hash(proposal: ResolutionProposal) -> str:

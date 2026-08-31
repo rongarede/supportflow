@@ -71,3 +71,76 @@ def test_terminal_workbench_explains_that_no_human_actions_remain(
 
     assert view.available_actions == ()
     assert available_actions_message(view) == "No human actions are available in REJECTED."
+
+
+def test_independent_form_submissions_reuse_waiting_and_completed_run_across_reopen(
+    tmp_path, monkeypatch
+) -> None:
+    """UI-generated receipt times must not create new runs or repeat side effects."""
+    from supportflow.ui.app import build_workbench_service, submit_workbench_ticket
+
+    monkeypatch.setenv("LANGGRAPH_STRICT_MSGPACK", "true")
+    runtime = tmp_path / "workbench"
+    fields = {
+        "ticket_id": "ticket-duplicate-001",
+        "customer_id": "customer-001",
+        "subject": "I was charged twice",
+        "body": "My order order-100 was charged twice for USD 29.00.",
+        "order_id": "order-100",
+        "amount": "29.00",
+        "currency": "USD",
+    }
+    first = submit_workbench_ticket(
+        build_workbench_service(runtime),
+        **fields,
+        received_at=datetime(2026, 8, 31, 8, 0, tzinfo=UTC),
+    )
+    duplicate_waiting = submit_workbench_ticket(
+        build_workbench_service(runtime),
+        **dict(fields),
+        received_at=datetime(2026, 8, 31, 8, 5, tzinfo=UTC),
+    )
+    completed = build_workbench_service(runtime).approve(
+        first.run_id, first.proposal.proposal_hash, "owner"
+    )
+    reopened_service = build_workbench_service(runtime)
+    duplicate_completed = submit_workbench_ticket(
+        reopened_service,
+        **dict(fields),
+        received_at=datetime(2026, 8, 31, 8, 10, tzinfo=UTC),
+    )
+
+    assert duplicate_waiting.run_id == first.run_id
+    assert duplicate_waiting.current_state == "WAITING_APPROVAL"
+    assert duplicate_completed.run_id == completed.run_id
+    assert duplicate_completed.current_state == "COMPLETED"
+    assert reopened_service.repository.count_execution_side_effects() == 2
+
+
+def test_workbench_preserves_explicit_source_revisions(tmp_path, monkeypatch) -> None:
+    from supportflow.ui.app import build_workbench_service, submit_workbench_ticket
+
+    monkeypatch.setenv("LANGGRAPH_STRICT_MSGPACK", "true")
+    runtime = tmp_path / "workbench"
+    fields = {
+        "ticket_id": "ticket-duplicate-001",
+        "customer_id": "customer-001",
+        "subject": "I was charged twice",
+        "body": "My order order-100 was charged twice for USD 29.00.",
+        "order_id": "order-100",
+        "amount": "29.00",
+        "currency": "USD",
+    }
+
+    source_v1 = submit_workbench_ticket(
+        build_workbench_service(runtime), **fields, input_revision="source-v1"
+    )
+    source_v1_reopened = submit_workbench_ticket(
+        build_workbench_service(runtime), **dict(fields), input_revision="source-v1"
+    )
+    source_v2 = submit_workbench_ticket(
+        build_workbench_service(runtime), **dict(fields), input_revision="source-v2"
+    )
+
+    assert source_v1_reopened.run_id == source_v1.run_id
+    assert source_v2.run_id != source_v1.run_id

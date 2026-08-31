@@ -58,7 +58,7 @@ def _policy_sha256(policy_directory: Path) -> str:
 def _build_frozen_index(policy_directory: Path) -> RagRetriever:
     documents = load_policy_documents(policy_directory)
     chunks = build_policy_chunks(documents)
-    provider = FixedEmbeddingProvider({chunk.text: [1.0, 0.0] for chunk in chunks})
+    provider = FixedEmbeddingProvider({})
     return RagRetriever(chunks, provider)
 
 
@@ -288,6 +288,14 @@ def _score_case(
         "observed": {
             "route": initial.triage.intent.value if initial.triage else None,
             "evidence_ids": sorted(referenced),
+            "retrieved_evidence_ids": (
+                [item.evidence_id for item in initial.evidence.items]
+                if initial.evidence
+                else []
+            ),
+            "retrieval_sufficient": (
+                initial.evidence.sufficient if initial.evidence else None
+            ),
             "proposed_actions": proposed_action_records,
             "terminal_state": final.current_state.value,
             "trace_stages": [event.stage for event in final.trace],

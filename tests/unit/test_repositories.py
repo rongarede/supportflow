@@ -1,13 +1,56 @@
 from __future__ import annotations
 
 import sqlite3
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 
+from supportflow.domain.hashing import canonical_input_revision
+from supportflow.domain.models import Ticket
 from supportflow.rag.documents import PolicyDocument
 from supportflow.rag.index import build_persisted_policy_index
 from supportflow.storage.database import SupportFlowDatabase
 from supportflow.storage.repositories import IndexManifest, SupportFlowRepository
+
+
+def test_repository_derives_stable_revision_without_ingestion_timestamp(tmp_path) -> None:
+    """The persistence boundary must deduplicate even when callers omit a revision."""
+    repository = SupportFlowRepository(SupportFlowDatabase(tmp_path / "supportflow.db"))
+    first_ticket = Ticket(
+        ticket_id="T-FORM-1",
+        customer_id="C-1",
+        subject="Charged twice",
+        body="Order A was charged twice for USD 10.00.",
+        order_id="A",
+        amount="10.00",
+        currency="USD",
+        created_at=datetime(2026, 8, 31, 8, 0, tzinfo=UTC),
+    )
+    independently_constructed = first_ticket.model_copy(
+        update={"created_at": first_ticket.created_at + timedelta(minutes=5)}
+    )
+
+    first_run_id = repository.create_run("run-first", first_ticket)
+    duplicate_run_id = repository.create_run(
+        "run-duplicate", independently_constructed
+    )
+    explicit_run_id = repository.create_run(
+        "run-explicit", independently_constructed, input_revision="source-v2"
+    )
+
+    assert canonical_input_revision(first_ticket) == canonical_input_revision(
+        independently_constructed
+    )
+    assert duplicate_run_id == first_run_id == "run-first"
+    assert explicit_run_id == "run-explicit"
+    revisions = {
+        row["run_id"]: row["input_revision"]
+        for row in repository.database.connection.execute(
+            "SELECT run_id, input_revision FROM runs"
+        )
+    }
+    assert revisions["run-first"] == canonical_input_revision(first_ticket)
+    assert revisions["run-explicit"] == "source-v2"
 
 
 def test_schema_enforces_ticket_run_and_execution_deduplication(tmp_path) -> None:

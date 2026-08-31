@@ -235,6 +235,71 @@ def test_resume_reconciles_committed_node_output_without_rerunning_agent(
     ]
 
 
+@pytest.mark.parametrize("crashed_node", ["triage", "retrieve", "resolve", "review", "policy"])
+def test_resume_safely_replays_a_pending_node_when_crash_precedes_journal_commit(
+    tmp_path, monkeypatch, duplicate_ticket, crashed_node
+) -> None:
+    """A checkpointed pending node must not depend on already having a journal output."""
+    runtime_directory = tmp_path / "runtime"
+    service = SupportFlowService.demo(
+        as_of=datetime(2026, 8, 31, tzinfo=UTC),
+        runtime_directory=runtime_directory,
+    )
+    run_id = f"run-crash-before-{crashed_node}"
+    service.repository.create_run(run_id, duplicate_ticket)
+    original_record = service.repository.record_node_result
+
+    def crash_before_commit(
+        persisted_run_id,
+        node_name,
+        output,
+        event,
+        *,
+        current_state,
+        next_node,
+    ) -> None:
+        if node_name == crashed_node:
+            raise RuntimeError(f"injected crash before {node_name} journal commit")
+        original_record(
+            persisted_run_id,
+            node_name,
+            output,
+            event,
+            current_state=current_state,
+            next_node=next_node,
+        )
+
+    monkeypatch.setattr(service.repository, "record_node_result", crash_before_commit)
+
+    with pytest.raises(RuntimeError, match=f"before {crashed_node} journal commit"):
+        service.graph.compiled.invoke(
+            {"run_id": run_id, "ticket": duplicate_ticket, "trace": []},
+            service._config(run_id),
+        )
+
+    restarted = SupportFlowService.demo(
+        as_of=datetime(2026, 8, 31, tzinfo=UTC),
+        runtime_directory=runtime_directory,
+    )
+    recovered = restarted.resume(run_id)
+
+    assert recovered.current_state == "WAITING_APPROVAL"
+    assert recovered.proposal is not None
+    assert recovered.policy_decision.outcome == "allow"
+    assert restarted.repository.count_execution_side_effects() == 0
+    assert [event.stage for event in recovered.trace] == [
+        "triage",
+        "retrieve",
+        "resolve",
+        "review",
+        "policy",
+    ]
+    if crashed_node in {"triage", "resolve", "review"}:
+        assert recovered.node_attempts[crashed_node] == 2
+    if crashed_node == "retrieve":
+        assert restarted.repository.operation_attempts(run_id, "retrieve") == 2
+
+
 @pytest.mark.parametrize("strict_value", [None, "false"])
 def test_sqlite_checkpoint_refuses_non_strict_serializer_mode(
     tmp_path, monkeypatch, strict_value

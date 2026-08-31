@@ -153,6 +153,36 @@ def build_workbench_service(runtime_directory: Path) -> SupportFlowService:
     return SupportFlowService.demo(runtime_directory=runtime_directory)
 
 
+def submit_workbench_ticket(
+    service: SupportFlowService,
+    *,
+    ticket_id: str,
+    customer_id: str,
+    subject: str,
+    body: str,
+    order_id: str,
+    amount: str,
+    currency: str,
+    received_at: datetime | None = None,
+    input_revision: str | None = None,
+) -> RunSnapshot:
+    """Submit form content while keeping UI receipt time out of derived identity."""
+    return service.submit(
+        Ticket(
+            ticket_id=ticket_id,
+            customer_id=customer_id,
+            subject=subject,
+            body=body,
+            order_id=order_id,
+            amount=amount,
+            currency=currency,
+            created_at=received_at or datetime.now(UTC),
+        ),
+        input_revision=input_revision,
+        source="workbench",
+    )
+
+
 def _service() -> SupportFlowService:
     if "supportflow_service" not in st.session_state:
         os.environ.setdefault("LANGGRAPH_STRICT_MSGPACK", "true")
@@ -195,17 +225,15 @@ def _ticket_form(service: SupportFlowService) -> None:
         submitted = st.form_submit_button("Review ticket")
     if not submitted:
         return
-    snapshot = service.submit(
-        Ticket(
-            ticket_id=ticket_id,
-            customer_id=customer_id,
-            subject=subject,
-            body=body,
-            order_id=order_id,
-            amount=amount,
-            currency=currency,
-            created_at=datetime.now(UTC),
-        )
+    snapshot = submit_workbench_ticket(
+        service,
+        ticket_id=ticket_id,
+        customer_id=customer_id,
+        subject=subject,
+        body=body,
+        order_id=order_id,
+        amount=amount,
+        currency=currency,
     )
     st.session_state.run_id = snapshot.run_id
     st.session_state.displayed_proposal_hash = (

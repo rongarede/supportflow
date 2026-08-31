@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import re
 from typing import Protocol
 
 import numpy as np
@@ -12,14 +14,32 @@ class EmbeddingProvider(Protocol):
 
 
 class FixedEmbeddingProvider:
-    def __init__(self, vectors: dict[str, list[float]], name: str = "fixed-demo-v1") -> None:
+    def __init__(
+        self,
+        vectors: dict[str, list[float]],
+        name: str = "fixed-token-hash-v1",
+        dimensions: int = 128,
+    ) -> None:
         self.name = name
         self.vectors = {key: np.asarray(value, dtype=float) for key, value in vectors.items()}
-        self.dimension = len(next(iter(self.vectors.values()))) if self.vectors else 2
+        self.dimension = (
+            len(next(iter(self.vectors.values()))) if self.vectors else dimensions
+        )
+
+    def _fixed_vector(self, text: str) -> np.ndarray:
+        vector = np.zeros(self.dimension, dtype=float)
+        for token in re.findall(r"[a-z0-9]+", text.lower()):
+            digest = hashlib.sha256(token.encode("utf-8")).digest()
+            vector[int.from_bytes(digest[:4], "big") % self.dimension] += 1.0
+        return vector
 
     def embed(self, texts: list[str]) -> np.ndarray:
         return np.asarray(
-            [self.vectors.get(text, np.zeros(self.dimension, dtype=float)) for text in texts], dtype=float
+            [
+                self.vectors.get(text, self._fixed_vector(text))
+                for text in texts
+            ],
+            dtype=float,
         )
 
 

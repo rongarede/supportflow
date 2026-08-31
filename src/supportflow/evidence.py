@@ -163,6 +163,9 @@ def generate_manifest_from_deterministic_run(
         "evidence_bundle": hashed_record(
             "runtime node_outputs/retrieve",
             {
+                "query": replayed.evidence.query,
+                "sufficient": replayed.evidence.sufficient,
+                "unresolved_questions": replayed.evidence.unresolved_questions,
                 "active_evidence": [
                     {
                         "evidence_id": item.evidence_id,

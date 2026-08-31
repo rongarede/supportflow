@@ -81,7 +81,7 @@ class SupportFlowService:
         provider = (
             SentenceTransformerEmbeddingProvider()
             if use_sentence_transformer
-            else FixedEmbeddingProvider({chunk.text: [1.0, 0.0] for chunk in uncached_chunks})
+            else FixedEmbeddingProvider({})
         )
         checkpoint_connection = None
         checkpointer = None
@@ -519,9 +519,12 @@ class SupportFlowService:
         config = self._config(run_id)
         checkpoint = self.graph.compiled.get_state(config)
         recoverable_nodes = {"triage", "retrieve", "resolve", "review", "policy"}
-        should_resume = "execute" in checkpoint.next or any(
-            node_name in recoverable_nodes
-            and self.repository.load_node_result(run_id, node_name) is not None
+        # A pending node can have either a committed repository result to reconcile
+        # or no result because the process stopped immediately before that commit.
+        # Model and retrieval nodes are bounded, side-effect-free operations, so the
+        # latter case must be replayed instead of leaving the run stranded.
+        should_resume = any(
+            node_name == "execute" or node_name in recoverable_nodes
             for node_name in checkpoint.next
         )
         if should_resume:

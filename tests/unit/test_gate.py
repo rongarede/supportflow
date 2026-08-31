@@ -62,6 +62,7 @@ def _review(*, decision: str = "pass", explanation: str = "Evidence review compl
 
 def _evidence(active: bool = True) -> EvidenceBundle:
     return EvidenceBundle(
+        query="duplicate charge refund request",
         items=[
             EvidenceItem(
                 evidence_id="policy-duplicate-charge-001",
@@ -90,7 +91,9 @@ def _evidence(active: bool = True) -> EvidenceBundle:
                 active=active,
                 score=0.7,
             ),
-        ]
+        ],
+        sufficient=True,
+        unresolved_questions=[],
     )
 
 
@@ -126,6 +129,7 @@ def test_gate_blocks_missing_evidence_reference() -> None:
 
 def test_gate_blocks_active_but_irrelevant_evidence_for_duplicate_charge_refund() -> None:
     evidence = EvidenceBundle(
+        query="duplicate charge refund request",
         items=[
             EvidenceItem(
                 evidence_id="policy-password-reset-001",
@@ -136,7 +140,9 @@ def test_gate_blocks_active_but_irrelevant_evidence_for_duplicate_charge_refund(
                 active=True,
                 score=0.99,
             )
-        ]
+        ],
+        sufficient=True,
+        unresolved_questions=[],
     )
     decision = PolicyGate().evaluate(
         _ticket(),

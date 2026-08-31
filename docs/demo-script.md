@@ -26,6 +26,8 @@ LANGGRAPH_STRICT_MSGPACK=true uv run python -m supportflow.cli demo-restart --ru
 
 The first approval runs in a fresh process and reports two `succeeded` actions. Replaying that approval reports `skipped_duplicate` for both actions and `stored_side_effects: 2`.
 
+The restart tests also inject a stop immediately before each triage, retrieval, resolution, review, and policy journal commit. Reopening safely replays a missing result or reconciles an existing result, without executing an unapproved action.
+
 ## 4. Show bounded model failure
 
 ```bash
@@ -40,7 +42,7 @@ Timeout and malformed structured-output doubles each make two local attempts, pe
 LANGGRAPH_STRICT_MSGPACK=true uv run python -m supportflow.eval.runner --dataset data/eval/tickets.jsonl --policies data/policies --output artifacts
 ```
 
-Read the output `evaluation_input_sha256` and open the matching JSON and Markdown report under `artifacts/`. These reports verify fixed fixtures and deterministic controls; they do not establish real-model performance or business improvement.
+Read the output `evaluation_input_sha256` and open the matching JSON and Markdown report under `artifacts/`. The JSON records each retrieved evidence ID and the sufficiency result; every successful retrieval is constrained to Top-5. These reports verify fixed fixtures and deterministic controls; they do not establish real-model performance or business improvement.
 
 ## 6. Rebuild the evidence manifest from a fresh run
 

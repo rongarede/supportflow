@@ -36,6 +36,11 @@ def test_committed_evidence_manifest_has_versioned_sanitized_hashes() -> None:
     assert manifest["evaluation_report"]["path"].endswith(".json")
     evaluation = json.loads(Path(manifest["evaluation_report"]["path"]).read_text(encoding="utf-8"))
     assert manifest["evaluation_report"]["sha256"] == canonical_sha256(evaluation)
+    evidence = manifest["records"]["evidence_bundle"]["payload"]
+    assert evidence["query"]
+    assert evidence["sufficient"] is True
+    assert evidence["unresolved_questions"] == []
+    assert 1 <= len(evidence["active_evidence"]) <= 5
 
 
 def test_committed_manifest_is_rebuilt_from_a_fresh_deterministic_run(

@@ -96,6 +96,14 @@
             }
           }
         ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-eligibility-001",
+          "policy-required-verification-001",
+          "policy-non-refundable-cases-001"
+        ],
         "route": "BILLING_QUESTION",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
@@ -218,6 +226,14 @@
               "tag": "billing-question"
             }
           }
+        ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-eligibility-001",
+          "policy-non-refundable-cases-001",
+          "policy-required-verification-001"
         ],
         "route": "BILLING_QUESTION",
         "terminal_state": "COMPLETED",
@@ -343,6 +359,14 @@
             }
           }
         ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-eligibility-001",
+          "policy-refund-request-001",
+          "policy-non-refundable-cases-001",
+          "policy-refund-timing-detail-001"
+        ],
         "route": "BILLING_QUESTION",
         "terminal_state": "REJECTED",
         "trace_count": 6,
@@ -464,6 +488,14 @@
               "tag": "billing-question"
             }
           }
+        ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-eligibility-001",
+          "policy-required-verification-001",
+          "policy-non-refundable-cases-001"
         ],
         "route": "BILLING_QUESTION",
         "terminal_state": "ESCALATED",
@@ -598,6 +630,14 @@
               "message": "We verified the duplicate charge and recorded a simulated refund request for review."
             }
           }
+        ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-request-001",
+          "policy-duplicate-charge-001",
+          "policy-refund-request-002",
+          "policy-refund-eligibility-001",
+          "policy-refund-timing-detail-001"
         ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
@@ -734,6 +774,14 @@
             }
           }
         ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-request-001",
+          "policy-duplicate-charge-001",
+          "policy-refund-request-002",
+          "policy-refund-timing-detail-001",
+          "policy-refund-eligibility-001"
+        ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
@@ -868,6 +916,14 @@
               "message": "We verified the duplicate charge and recorded a simulated refund request for review."
             }
           }
+        ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-request-001",
+          "policy-duplicate-charge-001",
+          "policy-refund-request-002",
+          "policy-refund-eligibility-001",
+          "policy-refund-timing-detail-001"
         ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
@@ -1004,6 +1060,14 @@
             }
           }
         ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-request-001",
+          "policy-refund-request-002",
+          "policy-duplicate-charge-001",
+          "policy-refund-timing-detail-001",
+          "policy-refund-eligibility-001"
+        ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
@@ -1129,6 +1193,14 @@
               "tag": "refund-status"
             }
           }
+        ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-timing-detail-001",
+          "policy-required-verification-001",
+          "policy-refund-request-002",
+          "policy-refund-request-001",
+          "policy-refund-eligibility-002"
         ],
         "route": "REFUND_STATUS",
         "terminal_state": "COMPLETED",
@@ -1256,6 +1328,14 @@
             }
           }
         ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-timing-detail-001",
+          "policy-required-verification-001",
+          "policy-refund-request-002",
+          "policy-refund-request-001",
+          "policy-duplicate-charge-001"
+        ],
         "route": "REFUND_STATUS",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
@@ -1382,6 +1462,14 @@
             }
           }
         ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-timing-detail-001",
+          "policy-required-verification-001",
+          "policy-refund-request-002",
+          "policy-refund-request-001",
+          "policy-duplicate-charge-001"
+        ],
         "route": "REFUND_STATUS",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
@@ -1507,6 +1595,14 @@
               "tag": "refund-status"
             }
           }
+        ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-timing-detail-001",
+          "policy-required-verification-001",
+          "policy-refund-request-002",
+          "policy-refund-request-001",
+          "policy-duplicate-charge-001"
         ],
         "route": "REFUND_STATUS",
         "terminal_state": "COMPLETED",
@@ -1640,6 +1736,14 @@
             }
           }
         ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-timing-detail-001",
+          "policy-refund-eligibility-002",
+          "policy-refund-eligibility-001",
+          "policy-human-escalation-001",
+          "policy-refund-request-001"
+        ],
         "route": "REFUND_REQUEST",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
@@ -1771,6 +1875,14 @@
               "message": "We recorded a simulated refund request; the payment provider determines final timing."
             }
           }
+        ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-eligibility-001",
+          "policy-refund-timing-detail-001",
+          "policy-refund-eligibility-002",
+          "policy-human-escalation-001",
+          "policy-refund-request-001"
         ],
         "route": "REFUND_REQUEST",
         "terminal_state": "COMPLETED",
@@ -1904,6 +2016,14 @@
             }
           }
         ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-timing-detail-001",
+          "policy-refund-eligibility-002",
+          "policy-refund-eligibility-001",
+          "policy-human-escalation-001",
+          "policy-refund-request-001"
+        ],
         "route": "REFUND_REQUEST",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
@@ -2035,6 +2155,14 @@
               "message": "We recorded a simulated refund request; the payment provider determines final timing."
             }
           }
+        ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-timing-detail-001",
+          "policy-refund-eligibility-002",
+          "policy-refund-eligibility-001",
+          "policy-human-escalation-001",
+          "policy-refund-request-001"
         ],
         "route": "REFUND_REQUEST",
         "terminal_state": "COMPLETED",
@@ -2168,6 +2296,14 @@
             }
           }
         ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-eligibility-001",
+          "policy-refund-timing-detail-001",
+          "policy-refund-eligibility-002",
+          "policy-human-escalation-001",
+          "policy-refund-request-001"
+        ],
         "route": "REFUND_REQUEST",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
@@ -2300,6 +2436,14 @@
             }
           }
         ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-timing-detail-001",
+          "policy-refund-eligibility-001",
+          "policy-refund-eligibility-002",
+          "policy-human-escalation-001",
+          "policy-refund-request-001"
+        ],
         "route": "REFUND_REQUEST",
         "terminal_state": "COMPLETED",
         "trace_count": 7,
@@ -2377,6 +2521,8 @@
         "duplicate_intake_reused": true,
         "evidence_ids": [],
         "proposed_actions": [],
+        "retrieval_sufficient": null,
+        "retrieved_evidence_ids": [],
         "route": "BILLING_QUESTION",
         "terminal_state": "WAITING_CUSTOMER",
         "trace_count": 1,
@@ -2440,6 +2586,8 @@
         "duplicate_intake_reused": true,
         "evidence_ids": [],
         "proposed_actions": [],
+        "retrieval_sufficient": null,
+        "retrieved_evidence_ids": [],
         "route": "REFUND_REQUEST",
         "terminal_state": "WAITING_CUSTOMER",
         "trace_count": 1,
@@ -2503,6 +2651,8 @@
         "duplicate_intake_reused": true,
         "evidence_ids": [],
         "proposed_actions": [],
+        "retrieval_sufficient": null,
+        "retrieved_evidence_ids": [],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "WAITING_CUSTOMER",
         "trace_count": 1,
@@ -2566,6 +2716,8 @@
         "duplicate_intake_reused": true,
         "evidence_ids": [],
         "proposed_actions": [],
+        "retrieval_sufficient": null,
+        "retrieved_evidence_ids": [],
         "route": "REFUND_STATUS",
         "terminal_state": "WAITING_CUSTOMER",
         "trace_count": 1,
@@ -2665,6 +2817,14 @@
               "summary": "Resolve the active refund eligibility conflict."
             }
           }
+        ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-eligibility-002",
+          "policy-refund-timing-detail-001",
+          "policy-refund-eligibility-001",
+          "policy-human-escalation-001",
+          "policy-refund-request-002"
         ],
         "route": "REFUND_REQUEST",
         "terminal_state": "ESCALATED",
@@ -2775,6 +2935,14 @@
             }
           }
         ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-eligibility-002",
+          "policy-refund-timing-detail-001",
+          "policy-refund-eligibility-001",
+          "policy-human-escalation-001",
+          "policy-refund-request-002"
+        ],
         "route": "REFUND_REQUEST",
         "terminal_state": "ESCALATED",
         "trace_count": 4,
@@ -2884,6 +3052,14 @@
             }
           }
         ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-eligibility-002",
+          "policy-refund-timing-detail-001",
+          "policy-refund-eligibility-001",
+          "policy-human-escalation-001",
+          "policy-non-refundable-cases-001"
+        ],
         "route": "REFUND_REQUEST",
         "terminal_state": "ESCALATED",
         "trace_count": 4,
@@ -2992,6 +3168,14 @@
               "summary": "Resolve the active refund eligibility conflict."
             }
           }
+        ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-eligibility-002",
+          "policy-refund-timing-detail-001",
+          "policy-refund-eligibility-001",
+          "policy-human-escalation-001",
+          "policy-refund-request-001"
         ],
         "route": "REFUND_REQUEST",
         "terminal_state": "ESCALATED",
@@ -3122,6 +3306,14 @@
               "message": "We verified the duplicate charge and recorded a simulated refund request for review."
             }
           }
+        ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-request-001",
+          "policy-duplicate-charge-001",
+          "policy-refund-request-002",
+          "policy-non-refundable-cases-001",
+          "policy-refund-eligibility-001"
         ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
@@ -3259,6 +3451,14 @@
             }
           }
         ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002",
+          "policy-required-verification-001",
+          "policy-non-refundable-cases-001"
+        ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
         "trace_count": 8,
@@ -3395,6 +3595,14 @@
             }
           }
         ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-refund-request-001",
+          "policy-duplicate-charge-001",
+          "policy-refund-request-002",
+          "policy-refund-timing-detail-001",
+          "policy-required-verification-001"
+        ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",
         "trace_count": 8,
@@ -3530,6 +3738,14 @@
               "message": "We verified the duplicate charge and recorded a simulated refund request for review."
             }
           }
+        ],
+        "retrieval_sufficient": true,
+        "retrieved_evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002",
+          "policy-refund-timing-detail-001",
+          "policy-refund-eligibility-001"
         ],
         "route": "DUPLICATE_CHARGE",
         "terminal_state": "COMPLETED",

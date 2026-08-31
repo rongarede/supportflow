@@ -9,6 +9,7 @@ from uuid import uuid4
 import numpy as np
 from pydantic import BaseModel
 
+from supportflow.domain.hashing import canonical_input_revision
 from supportflow.domain.models import (
     ApprovalRecord,
     EvidenceBundle,
@@ -122,7 +123,13 @@ class SupportFlowRepository:
         input_revision: str | None = None,
     ) -> str:
         timestamp = _now()
-        revision = input_revision or run_id
+        revision = (
+            input_revision.strip()
+            if input_revision is not None
+            else canonical_input_revision(ticket)
+        )
+        if not revision:
+            raise ValueError("input_revision must not be empty")
         with self.database.immediate() as connection:
             connection.execute(
                 "INSERT OR IGNORE INTO tickets "

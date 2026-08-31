@@ -200,7 +200,7 @@ class SupportFlowGraph:
                         f"{ticket.subject} {ticket.body}",
                         state["triage"].intent.value,
                         self.as_of,
-                        top_k=len(self.retriever.chunks),
+                        top_k=5,
                     )
                 except ValueError:
                     if self.repository is not None:
@@ -231,19 +231,27 @@ class SupportFlowGraph:
                         attempt=attempt,
                         retryable=True,
                     )
-                if self.repository is not None:
-                    self.repository.mark_operation_result(
-                        state["run_id"], "retrieve", status="succeeded"
-                    )
                 break
-            return self._node_result(
+            result = self._node_result(
                 state,
                 "retrieve",
                 {"evidence": evidence},
-                "active policy evidence retrieved",
+                (
+                    "active policy evidence retrieved"
+                    if evidence.sufficient
+                    else "active policy evidence is insufficient"
+                ),
                 current_state="EVIDENCE_READY",
-                next_node="resolve",
+                next_node="resolve" if evidence.sufficient else None,
             )
+            if self.repository is not None:
+                # Commit the durable node output before marking retrieval complete.
+                # A crash before the journal therefore leaves a bounded safe replay;
+                # a crash after it is reconciled from the cached node output.
+                self.repository.mark_operation_result(
+                    state["run_id"], "retrieve", status="succeeded"
+                )
+            return result
 
         def resolve_node(state: WorkflowState) -> dict:
             cached = self._cached_node_result(state, "resolve")
@@ -391,7 +399,11 @@ class SupportFlowGraph:
             return "retrieve"
 
         def route_after_retrieve(state: WorkflowState) -> str:
-            return END if state.get("terminal_state") else "resolve"
+            return (
+                END
+                if state.get("terminal_state") or not state["evidence"].sufficient
+                else "resolve"
+            )
 
         def route_after_resolve(state: WorkflowState) -> str:
             return END if state.get("terminal_state") else "review"

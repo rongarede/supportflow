@@ -89,7 +89,10 @@ class EvidenceItem(StrictModel):
 
 
 class EvidenceBundle(StrictModel):
+    query: str = Field(min_length=1)
     items: list[EvidenceItem] = Field(min_length=1)
+    sufficient: bool
+    unresolved_questions: list[str]
     audit_items: list[EvidenceItem] = Field(default_factory=list)
 
 

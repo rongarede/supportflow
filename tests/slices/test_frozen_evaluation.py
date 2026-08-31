@@ -73,6 +73,15 @@ def test_frozen_dataset_runs_complete_workflow(tmp_path, service_factory) -> Non
         for case in payload["cases"]
         if case["case_id"].startswith("duplicate-")
     )
+    successful_retrievals = [
+        case for case in payload["cases"]
+        if case["observed"]["retrieval_sufficient"] is True
+    ]
+    assert successful_retrievals
+    assert all(
+        1 <= len(case["observed"]["retrieved_evidence_ids"]) <= 5
+        for case in successful_retrievals
+    )
 
 
 def test_cli_evaluate_runs_the_same_frozen_journey(tmp_path) -> None:
