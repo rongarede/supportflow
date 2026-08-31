@@ -9,6 +9,7 @@ import subprocess
 import sys
 
 from supportflow.domain.models import Ticket
+from supportflow.eval.runner import main as evaluation_main
 from supportflow.settings import (
     DEFAULT_RESTART_DEMO_DIRECTORY,
     checkpoint_database_path,
@@ -175,6 +176,9 @@ def demo_safety() -> None:
 
 
 def main() -> None:
+    if len(sys.argv) > 1 and sys.argv[1] == "evaluate":
+        evaluation_main(sys.argv[2:])
+        return
     parser = argparse.ArgumentParser(prog="supportflow")
     parser.add_argument(
         "command",

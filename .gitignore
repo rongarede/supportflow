@@ -6,3 +6,5 @@ __pycache__/
 .env
 .cache/
 .supportflow/
+artifacts/eval-*.json
+artifacts/eval-*.md
