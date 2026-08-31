@@ -1,0 +1,15 @@
+{
+  "adapters": {"model": "FakeStructuredModel", "embedding": "FixedEmbeddingProvider"},
+  "profiles": {
+    "normal": {"missing_fields": [], "evidence_headings": ["duplicate-charge-verification", "duplicate-charge-refund-request", "refund-timing"]},
+    "missing": {"missing_fields": ["provider failure time"], "evidence_headings": []},
+    "conflict": {"missing_fields": [], "evidence_headings": ["duplicate-charge-verification", "duplicate-charge-refund-request", "refund-timing", "refund-eligibility", "refund-exclusion"]}
+  },
+  "ticket_profiles": {
+    "E-BILL-01": "normal", "E-BILL-02": "normal", "E-BILL-03": "normal", "E-BILL-04": "normal", "E-BILL-05": "normal", "E-BILL-06": "normal", "E-BILL-07": "normal", "E-BILL-08": "normal", "E-BILL-09": "normal", "E-BILL-10": "normal", "E-BILL-11": "normal", "E-BILL-12": "normal",
+    "E-REFUND-01": "normal", "E-REFUND-02": "normal", "E-REFUND-03": "normal", "E-REFUND-04": "normal", "E-REFUND-05": "normal", "E-REFUND-06": "normal",
+    "E-MISSING-01": "missing", "E-MISSING-02": "missing", "E-MISSING-03": "missing", "E-MISSING-04": "missing",
+    "E-CONFLICT-01": "conflict", "E-CONFLICT-02": "conflict", "E-CONFLICT-03": "conflict", "E-CONFLICT-04": "conflict",
+    "E-DUPLICATE-01": "normal", "E-DUPLICATE-02": "normal", "E-DUPLICATE-03": "normal", "E-DUPLICATE-04": "normal"
+  }
+}

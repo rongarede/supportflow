@@ -22,23 +22,33 @@ class EvaluationSummary:
 
 
 def write_reports(
-    summary: EvaluationSummary, results: list[dict[str, Any]], output_dir: Path
+    summary: EvaluationSummary, results: list[dict[str, Any]], output_dir: Path, adapters: dict[str, str]
 ) -> tuple[Path, Path]:
     """Write stable report names and content for a dataset/policy input pair."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    payload = {"summary": asdict(summary), "cases": results}
+    payload = {
+        "summary": asdict(summary),
+        "adapters": adapters,
+        "audit": {
+            "dataset_sha256": summary.dataset_sha256,
+            "policy_sha256": summary.policy_sha256,
+            "evidence_pointers": "Per-case observed.evidence_ids are policy chunk evidence pointers.",
+            "bad_case_categories": ["missing_information", "policy_conflict", "duplicate_submission"],
+            "scope": "Deterministic fixture wiring and safety evidence, not real-LLM quality.",
+        },
+        "cases": results,
+    }
     json_path = output_dir / f"eval-{summary.dataset_sha256}.json"
     markdown_path = output_dir / f"eval-{summary.dataset_sha256}.md"
     json_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    markdown_path.write_text(
-        "\n".join(
-            [
+    lines = [
                 "# SupportFlow frozen evaluation",
                 "",
                 f"- Dataset SHA-256: `{summary.dataset_sha256}`",
                 f"- Policy SHA-256: `{summary.policy_sha256}`",
+                f"- Adapters: `{adapters['model']}` + `{adapters['embedding']}`",
                 f"- Cases: {summary.case_count}",
                 f"- Route accuracy: {summary.route_accuracy:.3f}",
                 f"- Required-evidence hit rate: {summary.required_evidence_hit_rate:.3f}",
@@ -49,10 +59,20 @@ def write_reports(
                 f"- Duplicate side effects: {summary.duplicate_side_effect_count}",
                 f"- Recovery failures: {summary.recovery_failure_count}",
                 "",
-                "All actions are simulated. These are measured fixture results, not a baseline or uplift claim.",
+                "All actions are simulated. These are deterministic fixture wiring/safety evidence, not real-LLM quality, a baseline, or an uplift claim.",
                 "",
+                "## Per-case audit",
+                "",
+                "| Case | Route | Evidence pointers | Proposed actions | Terminal state | Score flags |",
+                "| --- | --- | --- | --- | --- | --- |",
             ]
-        ),
-        encoding="utf-8",
-    )
+    for result in results:
+        observed = result["observed"]
+        score_flags = ", ".join(
+            key for key in ("route_correct", "citations_valid", "action_correct", "terminal_state_correct") if result[key]
+        )
+        lines.append(
+            f"| {result['case_id']} | {observed['route'] or '-'} | {', '.join(observed['evidence_ids']) or '-'} | {', '.join(observed['proposed_actions']) or '-'} | {observed['terminal_state']} | {score_flags or '-'} |"
+        )
+    markdown_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return json_path, markdown_path

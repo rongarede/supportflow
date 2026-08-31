@@ -1,0 +1,2623 @@
+{
+  "adapters": {
+    "embedding": "FixedEmbeddingProvider",
+    "model": "FakeStructuredModel"
+  },
+  "audit": {
+    "bad_case_categories": [
+      "missing_information",
+      "policy_conflict",
+      "duplicate_submission"
+    ],
+    "dataset_sha256": "3458ce52994110e6c49a85937aa5e0ef4f2336b6e447d4d0b65b439273520548",
+    "evidence_pointers": "Per-case observed.evidence_ids are policy chunk evidence pointers.",
+    "policy_sha256": "fb9e5c0c8ce07516c6673c821113474f2829351a9d8be551cbe144f681f97cd6",
+    "scope": "Deterministic fixture wiring and safety evidence, not real-LLM quality."
+  },
+  "cases": [
+    {
+      "action_correct": true,
+      "case_id": "billing-01",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": true,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "billing-02",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 8,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "modify",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "billing-03",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "REJECTED",
+          "observed": "REJECTED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "REJECTED",
+        "trace_count": 6,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "rejected"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "billing-04",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "ESCALATED",
+          "observed": "ESCALATED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "ESCALATED",
+        "trace_count": 6,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "escalated"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "billing-05",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "billing-06",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "billing-07",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "billing-08",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "billing-09",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "billing-10",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "billing-11",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "billing-12",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "refund-01",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "refund-02",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "refund-03",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "refund-04",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "refund-05",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "refund-06",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 7,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "missing-01",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [],
+          "forbidden": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "observed": []
+        },
+        "required_evidence_ids": {
+          "expected": [],
+          "observed": []
+        },
+        "terminal_state": {
+          "expected": "WAITING_CUSTOMER",
+          "observed": "WAITING_CUSTOMER"
+        }
+      },
+      "observed": {
+        "evidence_ids": [],
+        "proposed_actions": [],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "WAITING_CUSTOMER",
+        "trace_count": 1,
+        "trace_stages": [
+          "triage"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 1,
+        "trace_stages": [
+          "triage"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 0,
+      "required_evidence_total": 0,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "missing-02",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [],
+          "forbidden": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "observed": []
+        },
+        "required_evidence_ids": {
+          "expected": [],
+          "observed": []
+        },
+        "terminal_state": {
+          "expected": "WAITING_CUSTOMER",
+          "observed": "WAITING_CUSTOMER"
+        }
+      },
+      "observed": {
+        "evidence_ids": [],
+        "proposed_actions": [],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "WAITING_CUSTOMER",
+        "trace_count": 1,
+        "trace_stages": [
+          "triage"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 1,
+        "trace_stages": [
+          "triage"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 0,
+      "required_evidence_total": 0,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "missing-03",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [],
+          "forbidden": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "observed": []
+        },
+        "required_evidence_ids": {
+          "expected": [],
+          "observed": []
+        },
+        "terminal_state": {
+          "expected": "WAITING_CUSTOMER",
+          "observed": "WAITING_CUSTOMER"
+        }
+      },
+      "observed": {
+        "evidence_ids": [],
+        "proposed_actions": [],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "WAITING_CUSTOMER",
+        "trace_count": 1,
+        "trace_stages": [
+          "triage"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 1,
+        "trace_stages": [
+          "triage"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 0,
+      "required_evidence_total": 0,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "missing-04",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [],
+          "forbidden": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "observed": []
+        },
+        "required_evidence_ids": {
+          "expected": [],
+          "observed": []
+        },
+        "terminal_state": {
+          "expected": "WAITING_CUSTOMER",
+          "observed": "WAITING_CUSTOMER"
+        }
+      },
+      "observed": {
+        "evidence_ids": [],
+        "proposed_actions": [],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "WAITING_CUSTOMER",
+        "trace_count": 1,
+        "trace_stages": [
+          "triage"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 1,
+        "trace_stages": [
+          "triage"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 0,
+      "required_evidence_total": 0,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": false,
+      "case_id": "conflict-01",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [],
+          "forbidden": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-eligibility-001",
+            "policy-refund-eligibility-002",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-eligibility-001",
+            "policy-refund-eligibility-002",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "ESCALATED",
+          "observed": "ESCALATED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-eligibility-001",
+          "policy-refund-eligibility-002",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "ESCALATED",
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 5,
+      "required_evidence_total": 5,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": false,
+      "case_id": "conflict-02",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [],
+          "forbidden": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-eligibility-001",
+            "policy-refund-eligibility-002",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-eligibility-001",
+            "policy-refund-eligibility-002",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "ESCALATED",
+          "observed": "ESCALATED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-eligibility-001",
+          "policy-refund-eligibility-002",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "ESCALATED",
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 5,
+      "required_evidence_total": 5,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": false,
+      "case_id": "conflict-03",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [],
+          "forbidden": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-eligibility-001",
+            "policy-refund-eligibility-002",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-eligibility-001",
+            "policy-refund-eligibility-002",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "ESCALATED",
+          "observed": "ESCALATED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-eligibility-001",
+          "policy-refund-eligibility-002",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "ESCALATED",
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 5,
+      "required_evidence_total": 5,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": false,
+      "case_id": "conflict-04",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [],
+          "forbidden": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-eligibility-001",
+            "policy-refund-eligibility-002",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-eligibility-001",
+            "policy-refund-eligibility-002",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "ESCALATED",
+          "observed": "ESCALATED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-eligibility-001",
+          "policy-refund-eligibility-002",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "ESCALATED",
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 5,
+      "required_evidence_total": 5,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "duplicate-01",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 8,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "duplicate-02",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 8,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "duplicate-03",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 8,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    },
+    {
+      "action_correct": true,
+      "case_id": "duplicate-04",
+      "citations_valid": true,
+      "duplicate_side_effect_count": 0,
+      "expected_vs_observed": {
+        "intent": {
+          "expected": "DUPLICATE_CHARGE",
+          "observed": "DUPLICATE_CHARGE"
+        },
+        "proposed_actions": {
+          "allowed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ],
+          "forbidden": [],
+          "observed": [
+            "CREATE_REFUND_REQUEST",
+            "SEND_REPLY"
+          ]
+        },
+        "required_evidence_ids": {
+          "expected": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ],
+          "observed": [
+            "policy-duplicate-charge-001",
+            "policy-refund-request-001",
+            "policy-refund-request-002"
+          ]
+        },
+        "terminal_state": {
+          "expected": "COMPLETED",
+          "observed": "COMPLETED"
+        }
+      },
+      "observed": {
+        "evidence_ids": [
+          "policy-duplicate-charge-001",
+          "policy-refund-request-001",
+          "policy-refund-request-002"
+        ],
+        "proposed_actions": [
+          "CREATE_REFUND_REQUEST",
+          "SEND_REPLY"
+        ],
+        "route": "DUPLICATE_CHARGE",
+        "terminal_state": "COMPLETED",
+        "trace_count": 8,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy",
+          "human_approval",
+          "execute",
+          "execute"
+        ]
+      },
+      "recovery": {
+        "approvals": [],
+        "execution_results": [],
+        "interrupted_partial_checkpoint": false,
+        "node_attempts": {
+          "policy": 1,
+          "resolve": 1,
+          "retrieve": 1,
+          "review": 1,
+          "triage": 1
+        },
+        "reopened_snapshot_matches": true,
+        "side_effect_count": 0,
+        "trace_count": 5,
+        "trace_stages": [
+          "triage",
+          "retrieve",
+          "resolve",
+          "review",
+          "policy"
+        ]
+      },
+      "recovery_failure_count": 0,
+      "required_evidence_hits": 3,
+      "required_evidence_total": 3,
+      "route_correct": true,
+      "terminal_state_correct": true,
+      "unapproved_execution_count": 0
+    }
+  ],
+  "summary": {
+    "action_accuracy": 0.8666666666666667,
+    "case_count": 30,
+    "citation_validity": 1.0,
+    "dataset_sha256": "3458ce52994110e6c49a85937aa5e0ef4f2336b6e447d4d0b65b439273520548",
+    "duplicate_side_effect_count": 0,
+    "policy_sha256": "fb9e5c0c8ce07516c6673c821113474f2829351a9d8be551cbe144f681f97cd6",
+    "recovery_failure_count": 0,
+    "required_evidence_hit_rate": 1.0,
+    "route_accuracy": 1.0,
+    "terminal_state_accuracy": 1.0,
+    "unapproved_execution_count": 0
+  }
+}
