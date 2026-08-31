@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Annotated, Any, Literal, Union
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from supportflow.agents.protocols import (
     InvalidAction,
@@ -29,33 +29,20 @@ class TriageOutput(ProviderDTO):
     missing_fields: list[str]
 
 
-class RefundParams(ProviderDTO):
+class ResolutionActionOutput(ProviderDTO):
+    """Flat action DTO avoids provider-incompatible oneOf/discriminator schemas."""
+
+    action_type: str
     order_id: str
     amount: str
     currency: str
-
-
-class ReplyParams(ProviderDTO):
     message: str
-
-
-class RefundAction(ProviderDTO):
-    action_type: Literal["CREATE_REFUND_REQUEST"]
-    params: RefundParams
-
-
-class ReplyAction(ProviderDTO):
-    action_type: Literal["SEND_REPLY"]
-    params: ReplyParams
-
-
-ClosedAction = Annotated[Union[RefundAction, ReplyAction], Field(discriminator="action_type")]
 
 
 class ResolutionOutput(ProviderDTO):
     ticket_id: str
     evidence_refs: list[str]
-    actions: list[ClosedAction]
+    actions: list[ResolutionActionOutput]
     created_at: str
 
 
@@ -77,7 +64,27 @@ def strict_schema_for(output_type: type[ModelOutput]) -> dict[str, Any]:
         dto = OUTPUT_DTOS[output_type]
     except KeyError as error:
         raise ValueError(f"Unsupported structured output type: {output_type.__name__}") from error
-    return dto.model_json_schema()
+    raw = dto.model_json_schema()
+    definitions = raw.pop("$defs", {})
+
+    def inline(schema: dict[str, Any]) -> dict[str, Any]:
+        reference = schema.get("$ref")
+        if reference:
+            return inline(definitions[reference.removeprefix("#/$defs/")])
+        result = {
+            key: value
+            for key, value in schema.items()
+            if key in {"additionalProperties", "const", "required", "title", "type"}
+        }
+        if "properties" in schema:
+            result["properties"] = {
+                name: inline(child) for name, child in schema["properties"].items()
+            }
+        if isinstance(schema.get("items"), dict):
+            result["items"] = inline(schema["items"])
+        return result
+
+    return inline(raw)
 
 
 class OpenAICompatibleStructuredModel:
@@ -123,24 +130,54 @@ class OpenAICompatibleStructuredModel:
             payload = json.loads(content)
         except json.JSONDecodeError as error:
             raise InvalidStructuredOutput("provider response was not valid JSON") from error
-        if output_type is ResolutionProposal:
-            actions = payload.get("actions") if isinstance(payload, dict) else None
-            if not isinstance(actions, list) or any(
-                not isinstance(action, dict)
-                or action.get("action_type") not in {"CREATE_REFUND_REQUEST", "SEND_REPLY"}
-                for action in actions
-            ):
-                raise InvalidAction("provider response proposed an unsupported action")
+        if output_type is ResolutionProposal and (
+            not isinstance(payload, dict) or not isinstance(payload.get("actions"), list)
+        ):
+            raise InvalidStructuredOutput("provider response did not include an actions list")
         dto_type = OUTPUT_DTOS[output_type]
         try:
             dto = dto_type.model_validate(payload)
-            return output_type.model_validate(dto.model_dump(mode="json"))
         except ValidationError as error:
-            if output_type is ResolutionProposal and any(
-                issue["loc"] and issue["loc"][0] == "actions" for issue in error.errors()
-            ):
-                raise InvalidAction("provider response proposed an invalid action") from error
             raise InvalidStructuredOutput("provider response did not match the requested schema") from error
+        if output_type is ResolutionProposal:
+            return OpenAICompatibleStructuredModel._resolution_from_dto(dto)
+        return output_type.model_validate(dto.model_dump(mode="json"))
+
+    @staticmethod
+    def _resolution_from_dto(dto: ProviderDTO) -> ResolutionProposal:
+        resolution = ResolutionOutput.model_validate(dto)
+        actions = []
+        for action in resolution.actions:
+            if action.action_type == "CREATE_REFUND_REQUEST":
+                if not all((action.order_id, action.amount, action.currency)):
+                    raise InvalidAction("provider response proposed an incomplete refund action")
+                actions.append(
+                    {
+                        "action_type": action.action_type,
+                        "params": {
+                            "order_id": action.order_id,
+                            "amount": action.amount,
+                            "currency": action.currency,
+                        },
+                    }
+                )
+            elif action.action_type == "SEND_REPLY":
+                if not action.message:
+                    raise InvalidAction("provider response proposed an empty reply action")
+                actions.append(
+                    {"action_type": action.action_type, "params": {"message": action.message}}
+                )
+            else:
+                raise InvalidAction("provider response proposed an unsupported action")
+        try:
+            return ResolutionProposal(
+                ticket_id=resolution.ticket_id,
+                evidence_refs=resolution.evidence_refs,
+                actions=actions,
+                created_at=resolution.created_at,
+            )
+        except ValidationError as error:
+            raise InvalidAction("provider response proposed an invalid action") from error
 
     def generate(
         self, role: str, input_payload: dict, output_type: type[ModelOutput]

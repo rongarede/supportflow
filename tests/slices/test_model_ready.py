@@ -65,6 +65,20 @@ class CountingTimeoutModel:
         raise ModelTimeout("simulated durable timeout")
 
 
+class MalformedResolutionModel:
+    """A model double that fails only resolution with retryable malformed output."""
+
+    def __init__(self, delegate) -> None:
+        self.delegate = delegate
+        self.resolution_calls = 0
+
+    def generate(self, role, input_payload, output_type):
+        if role == "resolution":
+            self.resolution_calls += 1
+            raise InvalidStructuredOutput("simulated missing action list")
+        return self.delegate.generate(role, input_payload, output_type)
+
+
 @pytest.fixture
 def service_factory():
     def build(model):
@@ -133,6 +147,19 @@ def test_invalid_action_stops_without_retry_or_execution(
     assert result.current_state == "NEEDS_ATTENTION"
     assert result.node_attempts["resolve"] == 1
     assert result.errors[-1].code == "INVALID_ACTION"
+    assert result.execution_results == []
+
+
+def test_structurally_malformed_resolution_retries_once_before_stopping(
+    service_factory, fake_model, duplicate_ticket
+) -> None:
+    """Catches malformed resolution output being treated as a non-retryable action error."""
+    model = MalformedResolutionModel(fake_model)
+    result = service_factory(model).submit(duplicate_ticket)
+
+    assert model.resolution_calls == 2
+    assert result.node_attempts["resolve"] == 2
+    assert result.errors[-1].code == "MODEL_EXHAUSTED"
     assert result.execution_results == []
 
 
@@ -208,23 +235,59 @@ def test_openai_compatible_adapter_validates_structured_response_without_network
 
 
 def test_openai_adapter_emits_closed_required_schemas_for_all_agent_outputs() -> None:
-    """Catches strict provider schemas that contain optional or open objects."""
+    """Catches schemas outside the advertised OpenAI strict structured-output subset."""
     from supportflow.agents.openai_adapter import strict_schema_for
 
     def assert_strict(schema):
+        allowed_keywords = {
+            "additionalProperties",
+            "const",
+            "items",
+            "properties",
+            "required",
+            "title",
+            "type",
+        }
+        assert set(schema) <= allowed_keywords
         if schema.get("type") == "object":
             assert schema["additionalProperties"] is False
             assert set(schema.get("required", [])) == set(schema.get("properties", {}))
-        for value in schema.values():
-            if isinstance(value, dict):
-                assert_strict(value)
-            elif isinstance(value, list):
-                for item in value:
-                    if isinstance(item, dict):
-                        assert_strict(item)
+        for child in schema.get("properties", {}).values():
+            assert_strict(child)
+        if isinstance(schema.get("items"), dict):
+            assert_strict(schema["items"])
 
     for output_type in (TriageResult, ResolutionProposal, RiskReview):
         assert_strict(strict_schema_for(output_type))
+
+
+def test_openai_adapter_classifies_missing_resolution_actions_as_retryable_malformed_output() -> None:
+    """Catches a missing or non-list actions field being mislabeled as an invalid action."""
+    from supportflow.agents.openai_adapter import OpenAICompatibleStructuredModel
+
+    class FakeCompletions:
+        def create(self, **_kwargs):
+            class Message:
+                content = '{"ticket_id":"ticket-duplicate-001","evidence_refs":["policy-duplicate-charge-001"],"created_at":"2026-08-31T00:00:00Z"}'
+
+            class Choice:
+                message = Message()
+
+            class Response:
+                choices = [Choice()]
+
+            return Response()
+
+    class FakeClient:
+        class chat:
+            completions = FakeCompletions()
+
+    adapter = OpenAICompatibleStructuredModel(
+        model="local-test-model", api_key="test-key", client=FakeClient()
+    )
+
+    with pytest.raises(InvalidStructuredOutput):
+        adapter.generate("resolution", {"ticket": {}}, ResolutionProposal)
 
 
 def test_openai_adapter_rejects_an_invalid_action_without_reclassifying_it_as_malformed() -> None:
@@ -234,7 +297,7 @@ def test_openai_adapter_rejects_an_invalid_action_without_reclassifying_it_as_ma
     class FakeCompletions:
         def create(self, **_kwargs):
             class Message:
-                content = '{"ticket_id":"ticket-duplicate-001","evidence_refs":["policy-duplicate-charge-001"],"actions":[{"action_type":"DELETE_ACCOUNT","params":{}}],"created_at":"2026-08-31T00:00:00Z"}'
+                content = '{"ticket_id":"ticket-duplicate-001","evidence_refs":["policy-duplicate-charge-001"],"actions":[{"action_type":"DELETE_ACCOUNT","order_id":"","amount":"","currency":"","message":""}],"created_at":"2026-08-31T00:00:00Z"}'
 
             class Choice:
                 message = Message()
@@ -270,7 +333,7 @@ def test_openai_adapter_passes_full_ticket_evidence_and_proposal_to_all_three_ca
             schema_name = kwargs["response_format"]["json_schema"]["name"]
             content_by_schema = {
                 "TriageOutput": '{"ticket_id":"ticket-duplicate-001","intent":"DUPLICATE_CHARGE","confidence":0.99,"rationale":"duplicate charge","missing_fields":[]}',
-                "ResolutionOutput": '{"ticket_id":"ticket-duplicate-001","evidence_refs":["policy-duplicate-charge-001","policy-refund-request-001","policy-refund-request-002"],"actions":[{"action_type":"CREATE_REFUND_REQUEST","params":{"order_id":"order-100","amount":"29.00","currency":"USD"}},{"action_type":"SEND_REPLY","params":{"message":"A refund request was created."}}],"created_at":"2026-08-31T00:00:00Z"}',
+                "ResolutionOutput": '{"ticket_id":"ticket-duplicate-001","evidence_refs":["policy-duplicate-charge-001","policy-refund-request-001","policy-refund-request-002"],"actions":[{"action_type":"CREATE_REFUND_REQUEST","order_id":"order-100","amount":"29.00","currency":"USD","message":""},{"action_type":"SEND_REPLY","order_id":"","amount":"","currency":"","message":"A refund request was created."}],"created_at":"2026-08-31T00:00:00Z"}',
                 "RiskReviewOutput": '{"escalated":false,"rationale":"Evidence and actions are constrained."}',
             }
 

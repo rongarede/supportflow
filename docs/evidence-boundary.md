@@ -4,7 +4,9 @@ This document records executable prototype evidence, with its limits.
 
 ## Committed evidence manifest
 
-The versioned, sanitized record is [artifacts/evidence-manifest-v1.json](../artifacts/evidence-manifest-v1.json). It preserves the run identifier and hashes of the ticket, all three agent outputs, evidence, policy decision, approval, simulated executions, checkpoint, trace, and frozen evaluation report without committing the mutable runtime database.
+The versioned, sanitized record is [artifacts/evidence-manifest-v1.json](../artifacts/evidence-manifest-v1.json). It preserves the run identifier and canonical sanitized payloads for the ticket, all three agent outputs, evidence, policy decision, approval, simulated executions, checkpoint, trace, and frozen evaluation report without committing the mutable runtime database.
+
+Every record hash is SHA-256 of its UTF-8 canonical JSON payload: recursively sorted keys with compact `,` and `:` separators, emitted without ASCII escaping. The evaluation-report hash is computed from the parsed JSON using the same algorithm. `supportflow.evidence.build_manifest` and `export_manifest` are the deterministic exporter primitives; `tests/slices/test_evidence_manifest.py` rebuilds the committed manifest, recomputes every record hash, and computes the current committed evaluation-artifact hash.
 
 ## Durable duplicate-charge run
 
