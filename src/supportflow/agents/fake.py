@@ -2,11 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from supportflow.agents.protocols import ModelOutput
-
-
-class ModelExhausted(RuntimeError):
-    """Raised when a deterministic fixture has no response for a model attempt."""
+from supportflow.agents.protocols import ModelExhausted, ModelOutput
 
 
 class FakeStructuredModel:
@@ -21,9 +17,7 @@ class FakeStructuredModel:
         try:
             result = self.responses[(role, ticket_id, attempt)]
         except KeyError as error:
-            raise ModelExhausted(
-                f"No fake response remains for {role} on ticket {ticket_id} attempt {attempt}"
-            ) from error
+            raise ModelExhausted(role, attempt) from error
         if not isinstance(result, output_type):
             raise TypeError(f"Fake response for {role} is not {output_type.__name__}")
         return result

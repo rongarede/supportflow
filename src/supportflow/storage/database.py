@@ -38,6 +38,14 @@ CREATE TABLE IF NOT EXISTS node_outputs (
     PRIMARY KEY (run_id, node_name)
 );
 
+CREATE TABLE IF NOT EXISTS model_attempts (
+    run_id TEXT NOT NULL,
+    node_name TEXT NOT NULL,
+    attempts INTEGER NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (run_id, node_name)
+);
+
 CREATE TABLE IF NOT EXISTS approvals (
     approval_id TEXT PRIMARY KEY,
     run_id TEXT NOT NULL,

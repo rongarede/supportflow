@@ -69,6 +69,19 @@ class TraceRepository:
         with self.database.immediate() as connection:
             self._insert(connection, run_id, event)
 
+    def record_retry(
+        self, run_id: str, node_name: str, attempt: int, error_type: str
+    ) -> None:
+        """Record only the safe error category, never provider response details."""
+        self.append(
+            run_id,
+            TraceEvent(
+                stage="model_retry",
+                detail=f"{node_name} attempt {attempt}: {error_type}",
+                occurred_at=datetime.now(UTC),
+            ),
+        )
+
     def list_for_run(self, run_id: str) -> list[TraceEvent]:
         rows = self.database.connection.execute(
             "SELECT stage, detail, occurred_at FROM trace_events "
@@ -151,7 +164,23 @@ class SupportFlowRepository:
             "SELECT node_name, attempts FROM node_outputs WHERE run_id = ? ORDER BY rowid",
             (run_id,),
         ).fetchall()
-        return {row["node_name"]: row["attempts"] for row in rows}
+        attempts = {row["node_name"]: row["attempts"] for row in rows}
+        model_rows = self.database.connection.execute(
+            "SELECT node_name, attempts FROM model_attempts WHERE run_id = ? ORDER BY rowid",
+            (run_id,),
+        ).fetchall()
+        attempts.update({row["node_name"]: row["attempts"] for row in model_rows})
+        return attempts
+
+    def record_model_attempt(self, run_id: str, node_name: str, attempt: int) -> None:
+        with self.database.immediate() as connection:
+            connection.execute(
+                "INSERT INTO model_attempts (run_id, node_name, attempts, updated_at) "
+                "VALUES (?, ?, ?, ?) "
+                "ON CONFLICT(run_id, node_name) DO UPDATE SET "
+                "attempts = excluded.attempts, updated_at = excluded.updated_at",
+                (run_id, node_name, attempt, _now()),
+            )
 
     def load_node_result(
         self, run_id: str, node_name: str

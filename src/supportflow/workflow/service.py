@@ -11,6 +11,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.types import Command
 
 from supportflow.agents.fake import FakeStructuredModel
+from supportflow.agents.protocols import StructuredModel
 from supportflow.agents.resolution import ResolutionAgent
 from supportflow.agents.reviewer import RiskReviewerAgent
 from supportflow.agents.triage import TriageAgent
@@ -61,6 +62,7 @@ class SupportFlowService:
         policy_directory: Path = DEFAULT_POLICY_DIRECTORY,
         use_sentence_transformer: bool = False,
         runtime_directory: Path | None = None,
+        model: StructuredModel | None = None,
     ) -> SupportFlowService:
         current = (as_of or datetime.now(UTC)).astimezone(UTC)
         if (
@@ -132,8 +134,9 @@ class SupportFlowService:
             evidence_ids_by_heading["refund-timing"],
         ]
         sample_ticket_id = "ticket-duplicate-001"
-        model = FakeStructuredModel(
-            {
+        if model is None:
+            model = FakeStructuredModel(
+                {
                 ("triage", sample_ticket_id, 1): TriageResult(
                     ticket_id=sample_ticket_id,
                     intent="DUPLICATE_CHARGE",
@@ -240,8 +243,8 @@ class SupportFlowService:
                     escalated=False,
                     rationale="The cited refund rule has expired and needs a human decision.",
                 ),
-            }
-        )
+                }
+            )
         graph = SupportFlowGraph(
             triage=TriageAgent(model),
             retriever=retriever,

@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import sys
 
+from supportflow.agents.openai_adapter import OpenAICompatibleStructuredModel
 from supportflow.domain.models import Ticket
 from supportflow.eval.runner import main as evaluation_main
 from supportflow.settings import (
@@ -31,9 +32,10 @@ def _golden_ticket() -> Ticket:
     )
 
 
-def demo_golden() -> None:
+def demo_golden(model_adapter: str = "fake") -> None:
     ticket = _golden_ticket()
-    service = SupportFlowService.demo(use_sentence_transformer=True)
+    model = OpenAICompatibleStructuredModel() if model_adapter == "openai" else None
+    service = SupportFlowService.demo(use_sentence_transformer=True, model=model)
     waiting = service.submit(ticket)
     completed = service.approve(waiting.run_id, waiting.proposal.proposal_hash, "portfolio-owner")
     print(f"run_id: {completed.run_id}")
@@ -41,6 +43,7 @@ def demo_golden() -> None:
     print(f"proposal_hash: {completed.proposal.proposal_hash}")
     print(f"approval: {completed.approval.reviewer}")
     print(f"final_state: {completed.current_state.value}")
+    print(f"model_adapter: {model.__class__.__name__ if model else 'FakeStructuredModel'}")
     print("simulated_actions: " + ", ".join(f"{item.action_type.value}={item.status}" for item in completed.execution_results))
 
 
@@ -84,9 +87,9 @@ def _restart_approve(
 
 def demo_restart(runtime_directory: Path) -> None:
     runtime_directory = runtime_directory.resolve()
-    if runtime_directory.name != "demo-restart":
+    if runtime_directory.name not in {"demo-restart", "final-restart"}:
         raise ValueError(
-            "demo-restart may only clear a dedicated demo-restart runtime"
+            "demo-restart may only clear a dedicated demo-restart runtime or a dedicated final-restart runtime"
         )
     runtime_directory.mkdir(parents=True, exist_ok=True)
     for database_path in (
@@ -193,9 +196,10 @@ def main() -> None:
     parser.add_argument("--runtime", type=Path, default=DEFAULT_RESTART_DEMO_DIRECTORY)
     parser.add_argument("--run-id")
     parser.add_argument("--proposal-hash")
+    parser.add_argument("--model-adapter", choices=["fake", "openai"], default="fake")
     args = parser.parse_args()
     if args.command == "demo-golden":
-        demo_golden()
+        demo_golden(args.model_adapter)
     elif args.command == "demo-safety":
         demo_safety()
     elif args.command == "demo-restart":

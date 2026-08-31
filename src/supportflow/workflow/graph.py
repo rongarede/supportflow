@@ -9,7 +9,7 @@ from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
-from supportflow.agents.fake import ModelExhausted
+from supportflow.agents.protocols import ModelExhausted
 from supportflow.agents.resolution import ResolutionAgent
 from supportflow.agents.reviewer import RiskReviewerAgent
 from supportflow.agents.triage import TriageAgent
@@ -18,7 +18,7 @@ from supportflow.execution.executor import DurableExecutor, InMemoryExecutor
 from supportflow.policy.gate import PolicyGate
 from supportflow.rag.retriever import RagRetriever
 from supportflow.storage.repositories import SupportFlowRepository
-from supportflow.workflow.nodes import trace
+from supportflow.workflow.nodes import run_model_node, trace
 
 
 class WorkflowState(TypedDict, total=False):
@@ -131,9 +131,20 @@ class SupportFlowGraph:
             if cached is not None:
                 return cached
             try:
-                result = self.triage.run(state["ticket"])
-            except ModelExhausted as error:
-                return self._needs_attention(state, "triage", error)
+                result = run_model_node(
+                    lambda: self.triage.run(state["ticket"]),
+                    node_name="triage",
+                    run_id=state["run_id"],
+                    repository=self.repository,
+                )
+            except ModelExhausted:
+                return self._needs_attention(
+                    state,
+                    "triage",
+                    code="MODEL_EXHAUSTED",
+                    message="Model output remained unavailable after bounded retries.",
+                    trace_detail="model output exhausted",
+                )
             return self._node_result(
                 state,
                 "triage",
@@ -155,8 +166,14 @@ class SupportFlowGraph:
                     self.as_of,
                     top_k=len(self.retriever.chunks),
                 )
-            except ValueError as error:
-                return self._needs_attention(state, "retrieve", error)
+            except ValueError:
+                return self._needs_attention(
+                    state,
+                    "retrieve",
+                    code="RETRIEVAL_UNAVAILABLE",
+                    message="Active policy evidence could not be retrieved.",
+                    trace_detail="retrieval unavailable",
+                )
             return self._node_result(
                 state,
                 "retrieve",
@@ -171,9 +188,20 @@ class SupportFlowGraph:
             if cached is not None:
                 return cached
             try:
-                proposal = self.resolution.run(state["ticket"], state["evidence"])
-            except ModelExhausted as error:
-                return self._needs_attention(state, "resolve", error)
+                proposal = run_model_node(
+                    lambda: self.resolution.run(state["ticket"], state["evidence"]),
+                    node_name="resolve",
+                    run_id=state["run_id"],
+                    repository=self.repository,
+                )
+            except ModelExhausted:
+                return self._needs_attention(
+                    state,
+                    "resolve",
+                    code="MODEL_EXHAUSTED",
+                    message="Model output remained unavailable after bounded retries.",
+                    trace_detail="model output exhausted",
+                )
             return self._node_result(
                 state,
                 "resolve",
@@ -188,9 +216,20 @@ class SupportFlowGraph:
             if cached is not None:
                 return cached
             try:
-                review = self.reviewer.run(state["ticket"], state["proposal"], state["evidence"])
-            except ModelExhausted as error:
-                return self._needs_attention(state, "review", error)
+                review = run_model_node(
+                    lambda: self.reviewer.run(state["ticket"], state["proposal"], state["evidence"]),
+                    node_name="review",
+                    run_id=state["run_id"],
+                    repository=self.repository,
+                )
+            except ModelExhausted:
+                return self._needs_attention(
+                    state,
+                    "review",
+                    code="MODEL_EXHAUSTED",
+                    message="Model output remained unavailable after bounded retries.",
+                    trace_detail="model output exhausted",
+                )
             return self._node_result(
                 state,
                 "review",
@@ -281,14 +320,22 @@ class SupportFlowGraph:
         builder.add_edge("execute", END)
         return builder.compile(checkpointer=self.checkpointer)
 
-    def _needs_attention(self, state: WorkflowState, stage: str, error: Exception) -> dict:
-        event = trace(stage, "model output exhausted")
+    def _needs_attention(
+        self,
+        state: WorkflowState,
+        stage: str,
+        *,
+        code: str,
+        message: str,
+        trace_detail: str,
+    ) -> dict:
+        event = trace(stage, trace_detail)
         if self.repository is not None:
             self.repository.trace.append(state["run_id"], event)
             self.repository.mark_run_state(state["run_id"], "NEEDS_ATTENTION")
         return {
             "terminal_state": "NEEDS_ATTENTION",
-            "errors": [*state.get("errors", []), RunError(code="MODEL_EXHAUSTED", message=str(error))],
+            "errors": [*state.get("errors", []), RunError(code=code, message=message)],
             "trace": [*state.get("trace", []), event],
         }
 
@@ -302,7 +349,12 @@ class SupportFlowGraph:
     ) -> None:
         state = self.compiled.get_state(config).values
         try:
-            review = self.reviewer.run(state["ticket"], proposal, state["evidence"])
+            review = run_model_node(
+                lambda: self.reviewer.run(state["ticket"], proposal, state["evidence"]),
+                node_name="modify",
+                run_id=state["run_id"],
+                repository=self.repository,
+            )
             decision = self.gate.evaluate(state["ticket"], state["evidence"], proposal, review)
             terminal_state = "ESCALATED" if revision_count > 2 else None
             detail = "revision limit reached" if terminal_state else f"revision requested by {reviewer}"
@@ -326,8 +378,17 @@ class SupportFlowGraph:
                     "trace": [*state.get("trace", []), event],
                 },
             )
-        except ModelExhausted as error:
-            self.compiled.update_state(config, self._needs_attention(state, "modify", error))
+        except ModelExhausted:
+            self.compiled.update_state(
+                config,
+                self._needs_attention(
+                    state,
+                    "modify",
+                    code="MODEL_EXHAUSTED",
+                    message="Model output remained unavailable after bounded retries.",
+                    trace_detail="model output exhausted",
+                ),
+            )
 
     def set_terminal(self, config: dict, state: str, reason: str, reviewer: str) -> None:
         values = self.compiled.get_state(config).values
