@@ -1,8 +1,8 @@
 # SupportFlow
 
-SupportFlow is a bounded portfolio prototype for English billing and refund-support tickets. It supports four structured intents (`BILLING_QUESTION`, `REFUND_REQUEST`, `DUPLICATE_CHARGE`, and `REFUND_STATUS`) and five simulated actions. Three constrained agent outputs (triage, resolution, and risk review) carry extracted facts, risks, reasons, evidence, and uncertainty; retrieval, policy validation, approval binding, and execution remain deterministic.
+SupportFlow 是一个范围明确的个人作品原型，面向英文账单与退款客服工单。系统支持四类结构化意图（`BILLING_QUESTION`、`REFUND_REQUEST`、`DUPLICATE_CHARGE` 和 `REFUND_STATUS`）以及五种模拟操作。三个受约束的 Agent 分别负责分诊、解决方案生成和风险审查，其输出包含提取事实、风险、理由、证据与不确定性；检索、策略校验、审批绑定和执行则保持确定性。
 
-## Run the fixed-model journey
+## 运行固定模型流程
 
 ```bash
 uv sync --extra dev
@@ -14,27 +14,33 @@ LANGGRAPH_STRICT_MSGPACK=true uv run python -m supportflow.evidence export --run
 uv run streamlit run src/supportflow/ui/app.py
 ```
 
-`demo-golden` completes the duplicate-charge path with a fixed local model and deterministic token-hash embedding. This embedding is the reproducible default for tests, CLI demos, evaluation, and the workbench. Retrieval uses the Triage intent to prioritize the relevant curated policy sections, fuses exact cosine and BM25 rankings, and returns at most five active items. `EvidenceBundle.sufficient` is true only when the selected evidence covers the intent's required policy type; otherwise generation stops before a proposal. `SentenceTransformerEmbeddingProvider` remains an opt-in application-service choice and loads `sentence-transformers/all-MiniLM-L6-v2` from an already populated local cache (`local_files_only=True`); it never downloads a model implicitly. `demo-restart` is intentionally allowed to clear only a directory named `demo-restart` or `final-restart`; it demonstrates a durable pause, a cross-process approval, and duplicate-execution prevention.
+`demo-golden` 使用固定本地模型和确定性的 token-hash embedding，完成重复扣费处理流程。该 embedding 是测试、命令行演示、评测和工作台的默认可复现实现。检索器根据分诊意图优先选择相关策略章节，融合精确余弦相似度与 BM25 排名，最多返回五条有效证据。只有当所选证据覆盖该意图要求的策略类型时，`EvidenceBundle.sufficient` 才为 `true`；否则系统会在生成解决方案前停止。
 
-When callers do not supply an upstream `input_revision`, the service and repository derive one from normalized ticket content while excluding the UI receipt timestamp. Independently constructed identical workbench submissions therefore reopen the same waiting or completed run. A supplied source revision is preserved and remains authoritative.
+`SentenceTransformerEmbeddingProvider` 是可选的应用服务实现，只会从本地缓存加载 `sentence-transformers/all-MiniLM-L6-v2`（`local_files_only=True`），不会隐式下载模型。`demo-restart` 仅允许清理名为 `demo-restart` 或 `final-restart` 的目录，用于演示持久化暂停、跨进程审批和重复执行防护。
 
-## Optional real-model adapter
+当调用方没有提供上游 `input_revision` 时，服务层和存储层会根据标准化后的工单内容生成修订标识，并排除 UI 接收时间戳。因此，即使分别构造内容相同的工作台提交，也会重新打开同一个等待中或已完成的运行。若调用方提供来源修订标识，系统会原样保留，并将其作为权威版本。
 
-Only the `StructuredModel` behind the three agents is replaceable. Retrieval stays `RagRetriever`; the `PolicyGate`, approval hash check, and `DurableExecutor` stay deterministic and simulated.
+## 可选的真实模型适配器
+
+系统只允许替换三个 Agent 背后的 `StructuredModel`。检索仍由 `RagRetriever` 完成；`PolicyGate`、审批哈希检查和 `DurableExecutor` 继续保持确定性与模拟执行边界。
 
 ```bash
 uv sync --extra real-llm
 export SUPPORTFLOW_LLM_MODEL="your-compatible-model"
 export OPENAI_API_KEY="your-key"
-# Optional for an OpenAI-compatible provider:
+# 可选：配置兼容 OpenAI API 的服务商
 export OPENAI_BASE_URL="https://provider.example/v1"
 uv run --extra real-llm python -m supportflow.cli demo-golden --model-adapter openai
 ```
 
-The adapter converts the three agent result types into provider-compatible strict JSON Schemas: all DTO fields are required, objects are closed, nested definitions are inlined, and the emitted subset contains no references, unions, or discriminators. Resolution uses one flat closed action DTO, then maps only the five allowlisted action forms into the domain variants after parsing. A timeout or malformed structured output is retried once; SDK retries are disabled so this is the complete two-call budget, persisted atomically across reopen/re-entry. Retrieval also retries once. A process stop after a safe model or retrieval result but before its repository journal commit replays that pending node within the same durable budget; an already journaled result is reconciled without re-running it. Each simulated action has a durable three-attempt transient-failure budget. All retry traces and terminal errors contain only safe categories, not provider payloads. An invalid action is not retried. Any exhausted or invalid result stops at `NEEDS_ATTENTION`; it cannot bypass approval. Provider keys and authorization headers are never logged. Automated tests use local doubles only and do not make network requests. The real-model demo is **not run** in this repository without user-supplied credentials.
+适配器会把三个 Agent 的结果类型转换为服务商兼容的严格 JSON Schema：所有 DTO 字段均为必填、对象保持封闭、嵌套定义会被内联，最终 Schema 不包含引用、联合类型或判别器。解决方案阶段使用一个扁平且封闭的操作 DTO；解析完成后，只将五种白名单操作映射为领域模型。
 
-## Evidence and limits
+模型超时或结构化输出格式错误时，系统只重试一次；SDK 自带重试被关闭，因此完整预算就是两次调用，并会在重启或重新进入节点后保持原子化记录。检索同样只重试一次。当进程在安全的模型或检索结果产生后、存储日志提交前中断时，待处理节点会在同一个持久化预算内重放；已经写入日志的结果只做状态协调，不会重复运行。每个模拟操作拥有三次持久化的瞬态失败尝试预算。
 
-The linked walkthrough is in [docs/demo-script.md](docs/demo-script.md), the concrete evidence chain is in [docs/evidence-boundary.md](docs/evidence-boundary.md), and its committed sanitized record is [artifacts/evidence-manifest-v1.json](artifacts/evidence-manifest-v1.json). The manifest is rebuilt from a fresh deterministic public-service run. Its `source_revision` is a SHA-256 over the executable `src/supportflow` tree, frozen `data` inputs, `pyproject.toml`, and `uv.lock`; generated artifacts are deliberately excluded, so the binding is exact without a self-referential commit-hash paradox.
+所有重试轨迹和终态错误只记录安全的错误类别，不保存服务商原始负载。非法操作不会重试。任何重试耗尽或非法结果都会停在 `NEEDS_ATTENTION`，无法绕过审批。服务商密钥和授权请求头不会进入日志。自动化测试仅使用本地替身，不发起网络请求。没有用户提供的凭据时，本仓库**不会运行真实模型演示**。
 
-This is a simulated executor, not a connected payment or support system. The frozen evaluation uses fixed fake model outputs and is **not real-model quality evaluation**. There is no business baseline and no measured business-improvement metric; its reported scores only audit the supplied 30-ticket portfolio dataset and deterministic safety/recovery invariants.
+## 证据与边界
+
+演示步骤见 [docs/demo-script.md](docs/demo-script.md)，完整证据链见 [docs/evidence-boundary.md](docs/evidence-boundary.md)，已提交的脱敏记录见 [artifacts/evidence-manifest-v1.json](artifacts/evidence-manifest-v1.json)。证据清单由一次全新的确定性公共服务运行生成。其 `source_revision` 是对可执行的 `src/supportflow` 源码树、冻结的 `data` 输入、`pyproject.toml` 和 `uv.lock` 计算得到的 SHA-256。生成产物被排除在摘要之外，因此可以精确绑定来源，同时避免“提交包含自身提交哈希”的循环依赖。
+
+本项目使用模拟执行器，并未连接真实支付系统或客服系统。冻结评测采用固定的假模型输出，**不代表真实模型质量评测**。项目没有业务基线，也没有经过测量的业务提升指标；当前分数仅用于审计所提供的 30 条作品集工单，以及确定性的安全与恢复约束。
