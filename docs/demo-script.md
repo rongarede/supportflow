@@ -32,7 +32,7 @@ The first approval runs in a fresh process and reports two `succeeded` actions. 
 uv run pytest tests/slices/test_model_ready.py::test_two_retryable_model_failures_stop_without_execution -v
 ```
 
-Timeout and malformed structured-output doubles each make two local attempts, persist only a safe error category, finish at `NEEDS_ATTENTION`, and leave `execution_results` empty. No external request is made.
+Timeout and malformed structured-output doubles each make two local attempts, persist only a safe error category, finish at `NEEDS_ATTENTION`, and leave `execution_results` empty. A semantically invalid action is not retried. No external request is made.
 
 ## 5. Reproduce the frozen evaluation
 

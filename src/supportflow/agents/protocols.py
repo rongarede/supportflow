@@ -14,6 +14,10 @@ class InvalidStructuredOutput(RuntimeError):
     """Raised when a model response cannot satisfy the requested Pydantic schema."""
 
 
+class InvalidAction(RuntimeError):
+    """Raised when a model proposes an action outside SupportFlow's closed action contract."""
+
+
 class ModelExhausted(RuntimeError):
     """Raised after the workflow has used its bounded model-failure budget."""
 

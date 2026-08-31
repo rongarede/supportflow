@@ -9,6 +9,11 @@ class ResolutionAgent:
     def run(self, ticket: Ticket, evidence: EvidenceBundle) -> ResolutionProposal:
         return self.model.generate(
             "resolution",
-            {"ticket_id": ticket.ticket_id, "evidence_ids": [item.evidence_id for item in evidence.items], "attempt": 1},
+            {
+                "ticket_id": ticket.ticket_id,
+                "ticket": ticket.model_dump(mode="json"),
+                "evidence": evidence.model_dump(mode="json"),
+                "attempt": 1,
+            },
             ResolutionProposal,
         )

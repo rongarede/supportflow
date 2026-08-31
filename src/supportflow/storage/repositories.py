@@ -172,8 +172,17 @@ class SupportFlowRepository:
         attempts.update({row["node_name"]: row["attempts"] for row in model_rows})
         return attempts
 
-    def record_model_attempt(self, run_id: str, node_name: str, attempt: int) -> None:
+    def claim_model_attempt(self, run_id: str, node_name: str) -> int | None:
+        """Atomically consume one of two durable model-call attempts for a node."""
         with self.database.immediate() as connection:
+            row = connection.execute(
+                "SELECT attempts FROM model_attempts WHERE run_id = ? AND node_name = ?",
+                (run_id, node_name),
+            ).fetchone()
+            previous = row["attempts"] if row is not None else 0
+            if previous >= 2:
+                return None
+            attempt = previous + 1
             connection.execute(
                 "INSERT INTO model_attempts (run_id, node_name, attempts, updated_at) "
                 "VALUES (?, ?, ?, ?) "
@@ -181,6 +190,7 @@ class SupportFlowRepository:
                 "attempts = excluded.attempts, updated_at = excluded.updated_at",
                 (run_id, node_name, attempt, _now()),
             )
+            return attempt
 
     def load_node_result(
         self, run_id: str, node_name: str

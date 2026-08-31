@@ -4,6 +4,7 @@ from typing import Callable, TypeVar
 from pydantic import BaseModel
 
 from supportflow.agents.protocols import (
+    InvalidAction,
     InvalidStructuredOutput,
     ModelExhausted,
     ModelTimeout,
@@ -27,12 +28,21 @@ def run_model_node(
     repository: SupportFlowRepository | None,
 ) -> ModelResult:
     """Run one model-backed agent with one bounded retry and sanitized audit data."""
-    for attempt in (1, 2):
+    local_attempts = 0
+    while True:
         if repository is not None:
-            repository.record_model_attempt(run_id, node_name, attempt)
+            attempt = repository.claim_model_attempt(run_id, node_name)
+            if attempt is None:
+                raise ModelExhausted(node_name, attempts=2)
+        else:
+            local_attempts += 1
+            attempt = local_attempts
+            if attempt > 2:
+                raise ModelExhausted(node_name, attempts=2)
         try:
             return call()
+        except InvalidAction:
+            raise
         except (ModelTimeout, InvalidStructuredOutput) as error:
             if repository is not None:
                 repository.trace.record_retry(run_id, node_name, attempt, type(error).__name__)
-    raise ModelExhausted(node_name, attempts=2)

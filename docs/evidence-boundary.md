@@ -2,9 +2,13 @@
 
 This document records executable prototype evidence, with its limits.
 
+## Committed evidence manifest
+
+The versioned, sanitized record is [artifacts/evidence-manifest-v1.json](../artifacts/evidence-manifest-v1.json). It preserves the run identifier and hashes of the ticket, all three agent outputs, evidence, policy decision, approval, simulated executions, checkpoint, trace, and frozen evaluation report without committing the mutable runtime database.
+
 ## Durable duplicate-charge run
 
-The restart demo ran on 2026-08-31 with run ID `1b9615ce-6483-4fd4-9a22-9268955ab13a` in `.supportflow/final-restart/`.
+The restart demo ran on 2026-08-31 with run ID `d57c0628-a0c6-4788-bdc0-b622b07b2801` in `.supportflow/final-restart/`.
 
 - **Ticket:** `ticket-duplicate-001`, persisted in `supportflow.db:runs` and `tickets`.
 - **Three agent outputs:** `node_outputs` contains one result each for `triage`, `resolve`, and `review`; their adapter attempts are separately persisted as one each in `model_attempts`.
@@ -13,7 +17,7 @@ The restart demo ran on 2026-08-31 with run ID `1b9615ce-6483-4fd4-9a22-9268955a
 - **ExecutionResult:** `executions` records exactly two simulated side effects, `CREATE_REFUND_REQUEST` and `SEND_REPLY`. Re-approval produced `skipped_duplicate` results without adding side effects.
 - **Checkpoint and trace:** `.supportflow/final-restart/checkpoints.sqlite` contains 10 checkpoint rows. `trace_events` records triage, retrieval, resolution, review, policy, human approval, simulated execution, and the duplicate-execution skip.
 
-The same command output showed `resumed_state: WAITING_APPROVAL`, then two first-run successes, two replay skips, and `stored_side_effects: 2`. The durable runtime is a local demonstration artifact; its executor is simulated.
+The same command output showed `resumed_state: WAITING_APPROVAL`, then two first-run successes, two replay skips, and `stored_side_effects: 2`. The durable runtime is a local demonstration artifact; its executor is simulated. It is an export source, not the portable evidence itself; use the committed manifest above when reviewing the run.
 
 ## Frozen evaluation evidence
 

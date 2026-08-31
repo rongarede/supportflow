@@ -1,0 +1,27 @@
+{
+  "manifest_version": "supportflow-evidence-manifest/v1",
+  "sanitized": true,
+  "source_revision": "working tree after e870a32; exported before this manifest was committed",
+  "run": {
+    "run_id": "d57c0628-a0c6-4788-bdc0-b622b07b2801",
+    "ticket_id": "ticket-duplicate-001",
+    "terminal_state": "COMPLETED",
+    "runtime_note": "Hashes were exported from the local durable demo runtime; the runtime database itself is intentionally not versioned."
+  },
+  "records": {
+    "ticket": {"source": "supportflow.db:tickets.ticket_json", "sha256": "992d314d5ea3e0b98f584affb186ec1f8ce76ba806a6a1728972cfe1afc34e9c"},
+    "triage": {"source": "supportflow.db:node_outputs/triage", "sha256": "400d714347c886e9b61a836f012384662924fe987a7c6843530cb07b0282731c"},
+    "evidence_bundle": {"source": "supportflow.db:node_outputs/retrieve", "sha256": "68968abe5d8ec7bf64b79e20ad3fae672461c4bf18e91aefc158d66844bbd95c"},
+    "proposal": {"source": "supportflow.db:node_outputs/resolve", "sha256": "6992ed2e7df6e6ff143f5fad1b16a4b4289b163bd0793a672450ba440b37c173"},
+    "risk_review": {"source": "supportflow.db:node_outputs/review", "sha256": "23dc6d88a22c6a4c21c6f77bcba0251d220f557171ab211dab05975e49e9056e"},
+    "policy_decision": {"source": "supportflow.db:node_outputs/policy", "sha256": "f2630a15c876588c3c324a684f6dd5c2b3f83d3c0fa405649fe15707610ddd0e"},
+    "approval": {"source": "supportflow.db:approvals.record_json", "sha256": "2fdb67a3dad6fa39f5e4e05d33c44045de5c7e3d56ec5fd2d4ff426448828a20"},
+    "execution_results": {"source": "supportflow.db:executions.result_json sorted by idempotency key", "sha256": "b72081f7f2fa81350c14107b6840c6ff4e78bca81ffe987e73245eedac524fee"},
+    "checkpoint": {"source": "checkpoints.sqlite (10 rows)", "sha256": "6c1f40968b72c26c009046942f350a109cb74c246b19ac7865ed2618007d157f"},
+    "trace": {"source": "supportflow.db:trace_events stage/detail ordered by rowid", "sha256": "dae697ae40838dd22f601dd09d29270c315100c593e3b57ebb1f2ba0b0c6b509"}
+  },
+  "evaluation_report": {
+    "path": "artifacts/eval-870d4b3f9d2e2df3d42a22e9f92a22548f2a19c2d5dc545be6689451343c3f9d.json",
+    "sha256": "10a1c875f8f47d51ff6a8693f2f0f486501aef353426a3b23887ac2961621b9a"
+  }
+}

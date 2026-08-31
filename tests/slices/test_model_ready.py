@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -8,8 +9,12 @@ import sys
 
 import pytest
 
-from supportflow.agents.protocols import InvalidStructuredOutput, ModelTimeout
-from supportflow.domain.models import TriageResult
+from supportflow.agents.protocols import (
+    InvalidAction,
+    InvalidStructuredOutput,
+    ModelTimeout,
+)
+from supportflow.domain.models import ResolutionProposal, RiskReview, TriageResult
 from supportflow.workflow.service import SupportFlowService
 
 
@@ -25,6 +30,39 @@ class MalformedModel:
 
     def generate(self, role, input_payload, output_type):
         raise InvalidStructuredOutput("simulated malformed JSON")
+
+
+class InvalidActionModel:
+    """A local double that rejects the proposed action without a retry."""
+
+    def __init__(self, delegate) -> None:
+        self.delegate = delegate
+
+    def generate(self, role, input_payload, output_type):
+        if role == "resolution":
+            raise InvalidAction("simulated invalid action")
+        return self.delegate.generate(role, input_payload, output_type)
+
+
+class ReviewTimingOutModel:
+    """A local double that only exhausts the final model-backed node."""
+
+    def __init__(self, delegate) -> None:
+        self.delegate = delegate
+
+    def generate(self, role, input_payload, output_type):
+        if role == "reviewer":
+            raise ModelTimeout("simulated review timeout")
+        return self.delegate.generate(role, input_payload, output_type)
+
+
+class CountingTimeoutModel:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def generate(self, role, input_payload, output_type):
+        self.calls += 1
+        raise ModelTimeout("simulated durable timeout")
 
 
 @pytest.fixture
@@ -86,6 +124,55 @@ def test_retrieval_failure_is_not_reported_as_model_exhaustion(
     assert result.execution_results == []
 
 
+def test_invalid_action_stops_without_retry_or_execution(
+    service_factory, fake_model, duplicate_ticket
+) -> None:
+    """Catches invalid action output being retried as if it were malformed JSON."""
+    result = service_factory(InvalidActionModel(fake_model)).submit(duplicate_ticket)
+
+    assert result.current_state == "NEEDS_ATTENTION"
+    assert result.node_attempts["resolve"] == 1
+    assert result.errors[-1].code == "INVALID_ACTION"
+    assert result.execution_results == []
+
+
+def test_review_model_exhaustion_stops_before_policy(
+    service_factory, fake_model, duplicate_ticket
+) -> None:
+    """Catches a terminal review failure that still enters the policy node."""
+    result = service_factory(ReviewTimingOutModel(fake_model)).submit(duplicate_ticket)
+
+    assert result.current_state == "NEEDS_ATTENTION"
+    assert result.node_attempts["review"] == 2
+    assert result.policy_decision is None
+    assert result.execution_results == []
+
+
+def test_durable_retry_budget_is_cumulative_after_reopen(tmp_path, monkeypatch, duplicate_ticket) -> None:
+    """Catches a reopened run resetting a partially used model retry budget."""
+    monkeypatch.setenv("LANGGRAPH_STRICT_MSGPACK", "true")
+    runtime = tmp_path / "runtime"
+    model = CountingTimeoutModel()
+    first = SupportFlowService.demo(
+        as_of=datetime(2026, 8, 31, tzinfo=UTC), runtime_directory=runtime, model=model
+    )
+    run_id = "retry-budget-reopen"
+    first.repository.create_run(run_id, duplicate_ticket)
+    assert first.repository.claim_model_attempt(run_id, "triage") == 1
+
+    reopened = SupportFlowService.demo(
+        as_of=datetime(2026, 8, 31, tzinfo=UTC), runtime_directory=runtime, model=model
+    )
+    reopened.graph.compiled.invoke(
+        {"run_id": run_id, "ticket": duplicate_ticket, "trace": []}, reopened._config(run_id)
+    )
+    result = reopened.snapshot(run_id)
+
+    assert model.calls == 1
+    assert result.node_attempts["triage"] == 2
+    assert result.current_state == "NEEDS_ATTENTION"
+
+
 def test_openai_compatible_adapter_validates_structured_response_without_network() -> None:
     """Catches an adapter that does not return a typed result from provider JSON."""
     from supportflow.agents.openai_adapter import OpenAICompatibleStructuredModel
@@ -93,7 +180,7 @@ def test_openai_compatible_adapter_validates_structured_response_without_network
     class FakeCompletions:
         def create(self, **_kwargs):
             class Message:
-                content = '{"ticket_id":"ticket-duplicate-001","intent":"DUPLICATE_CHARGE","confidence":0.99,"rationale":"duplicate charge"}'
+                content = '{"ticket_id":"ticket-duplicate-001","intent":"DUPLICATE_CHARGE","confidence":0.99,"rationale":"duplicate charge","missing_fields":[]}'
 
             class Choice:
                 message = Message()
@@ -118,6 +205,112 @@ def test_openai_compatible_adapter_validates_structured_response_without_network
     )
 
     assert result.intent == "DUPLICATE_CHARGE"
+
+
+def test_openai_adapter_emits_closed_required_schemas_for_all_agent_outputs() -> None:
+    """Catches strict provider schemas that contain optional or open objects."""
+    from supportflow.agents.openai_adapter import strict_schema_for
+
+    def assert_strict(schema):
+        if schema.get("type") == "object":
+            assert schema["additionalProperties"] is False
+            assert set(schema.get("required", [])) == set(schema.get("properties", {}))
+        for value in schema.values():
+            if isinstance(value, dict):
+                assert_strict(value)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        assert_strict(item)
+
+    for output_type in (TriageResult, ResolutionProposal, RiskReview):
+        assert_strict(strict_schema_for(output_type))
+
+
+def test_openai_adapter_rejects_an_invalid_action_without_reclassifying_it_as_malformed() -> None:
+    """Catches a closed action violation that enters the retryable malformed-output path."""
+    from supportflow.agents.openai_adapter import OpenAICompatibleStructuredModel
+
+    class FakeCompletions:
+        def create(self, **_kwargs):
+            class Message:
+                content = '{"ticket_id":"ticket-duplicate-001","evidence_refs":["policy-duplicate-charge-001"],"actions":[{"action_type":"DELETE_ACCOUNT","params":{}}],"created_at":"2026-08-31T00:00:00Z"}'
+
+            class Choice:
+                message = Message()
+
+            class Response:
+                choices = [Choice()]
+
+            return Response()
+
+    class FakeClient:
+        class chat:
+            completions = FakeCompletions()
+
+    adapter = OpenAICompatibleStructuredModel(
+        model="local-test-model", api_key="test-key", client=FakeClient()
+    )
+
+    with pytest.raises(InvalidAction):
+        adapter.generate("resolution", {"ticket": {}}, ResolutionProposal)
+
+
+def test_openai_adapter_passes_full_ticket_evidence_and_proposal_to_all_three_calls(
+    duplicate_ticket
+) -> None:
+    """Catches resolution or review prompts that omit the information needed for a valid proposal."""
+    from supportflow.agents.openai_adapter import OpenAICompatibleStructuredModel
+
+    calls = []
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            calls.append(kwargs)
+            schema_name = kwargs["response_format"]["json_schema"]["name"]
+            content_by_schema = {
+                "TriageOutput": '{"ticket_id":"ticket-duplicate-001","intent":"DUPLICATE_CHARGE","confidence":0.99,"rationale":"duplicate charge","missing_fields":[]}',
+                "ResolutionOutput": '{"ticket_id":"ticket-duplicate-001","evidence_refs":["policy-duplicate-charge-001","policy-refund-request-001","policy-refund-request-002"],"actions":[{"action_type":"CREATE_REFUND_REQUEST","params":{"order_id":"order-100","amount":"29.00","currency":"USD"}},{"action_type":"SEND_REPLY","params":{"message":"A refund request was created."}}],"created_at":"2026-08-31T00:00:00Z"}',
+                "RiskReviewOutput": '{"escalated":false,"rationale":"Evidence and actions are constrained."}',
+            }
+
+            class Message:
+                content = content_by_schema[schema_name]
+
+            class Choice:
+                message = Message()
+
+            class Response:
+                choices = [Choice()]
+
+            return Response()
+
+    class FakeClient:
+        class chat:
+            completions = FakeCompletions()
+
+    adapter = OpenAICompatibleStructuredModel(
+        model="local-test-model", api_key="test-key", client=FakeClient()
+    )
+    service = SupportFlowService.demo(
+        as_of=datetime(2026, 8, 31, tzinfo=UTC), model=adapter
+    )
+
+    result = service.submit(duplicate_ticket)
+    payloads = [json.loads(call["messages"][1]["content"]) for call in calls]
+
+    assert result.current_state == "WAITING_APPROVAL"
+    assert [call["response_format"]["json_schema"]["name"] for call in calls] == [
+        "TriageOutput",
+        "ResolutionOutput",
+        "RiskReviewOutput",
+    ]
+    assert payloads[0]["ticket"]["body"] == duplicate_ticket.body
+    assert payloads[1]["ticket"]["order_id"] == "order-100"
+    assert payloads[1]["evidence"]["items"]
+    assert payloads[2]["ticket"]["amount"] == "29.00"
+    assert payloads[2]["evidence"]["items"]
+    assert payloads[2]["proposal"]["actions"]
 
 
 def test_restart_demo_accepts_a_dedicated_final_evidence_runtime(tmp_path) -> None:

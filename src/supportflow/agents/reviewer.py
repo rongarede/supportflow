@@ -11,8 +11,9 @@ class RiskReviewerAgent:
             "reviewer",
             {
                 "ticket_id": ticket.ticket_id,
-                "proposal_hash": proposal.proposal_hash,
-                "evidence_ids": [item.evidence_id for item in evidence.items],
+                "ticket": ticket.model_dump(mode="json"),
+                "proposal": proposal.model_dump(mode="json"),
+                "evidence": evidence.model_dump(mode="json"),
                 "attempt": 1,
             },
             RiskReview,

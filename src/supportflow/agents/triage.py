@@ -9,6 +9,10 @@ class TriageAgent:
     def run(self, ticket: Ticket) -> TriageResult:
         return self.model.generate(
             "triage",
-            {"ticket_id": ticket.ticket_id, "subject": ticket.subject, "body": ticket.body, "attempt": 1},
+            {
+                "ticket_id": ticket.ticket_id,
+                "ticket": ticket.model_dump(mode="json"),
+                "attempt": 1,
+            },
             TriageResult,
         )

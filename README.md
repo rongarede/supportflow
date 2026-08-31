@@ -28,10 +28,10 @@ export OPENAI_BASE_URL="https://provider.example/v1"
 uv run --extra real-llm python -m supportflow.cli demo-golden --model-adapter openai
 ```
 
-The adapter requests JSON Schema output and validates it with the existing Pydantic result type. A timeout or invalid structured output is retried once. A second failure records a sanitized error and stops at `NEEDS_ATTENTION`; it does not enter retrieval, approval, or execution. Provider keys and authorization headers are never logged. Automated tests use local doubles only and do not make network requests. The real-model demo is **not run** in this repository without user-supplied credentials.
+The adapter converts the three agent result types into provider-compatible strict JSON Schemas: all DTO fields are required, objects are closed, and action variants are limited to the two allowlisted simulated actions. It validates the provider result back into the existing Pydantic domain type. A timeout or malformed structured output is retried once; SDK retries are disabled so this is the complete two-call budget, persisted atomically across reopen/re-entry. An invalid action is not retried. Any exhausted or invalid result records a sanitized error and stops at `NEEDS_ATTENTION`; it does not enter retrieval, approval, or execution. Provider keys and authorization headers are never logged. Automated tests use local doubles only and do not make network requests. The real-model demo is **not run** in this repository without user-supplied credentials.
 
 ## Evidence and limits
 
-The linked walkthrough is in [docs/demo-script.md](docs/demo-script.md), and the concrete evidence chain is in [docs/evidence-boundary.md](docs/evidence-boundary.md).
+The linked walkthrough is in [docs/demo-script.md](docs/demo-script.md), the concrete evidence chain is in [docs/evidence-boundary.md](docs/evidence-boundary.md), and its committed sanitized record is [artifacts/evidence-manifest-v1.json](artifacts/evidence-manifest-v1.json).
 
 This is a simulated executor, not a connected payment or support system. The frozen evaluation uses fixed fake model outputs and is **not real-model quality evaluation**. There is no business baseline and no measured business-improvement metric; its reported scores only audit the supplied 30-ticket portfolio dataset and deterministic safety/recovery invariants.

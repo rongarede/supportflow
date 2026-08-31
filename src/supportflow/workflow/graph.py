@@ -9,7 +9,7 @@ from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
-from supportflow.agents.protocols import ModelExhausted
+from supportflow.agents.protocols import InvalidAction, ModelExhausted
 from supportflow.agents.resolution import ResolutionAgent
 from supportflow.agents.reviewer import RiskReviewerAgent
 from supportflow.agents.triage import TriageAgent
@@ -137,6 +137,14 @@ class SupportFlowGraph:
                     run_id=state["run_id"],
                     repository=self.repository,
                 )
+            except InvalidAction:
+                return self._needs_attention(
+                    state,
+                    "triage",
+                    code="INVALID_ACTION",
+                    message="Model output proposed an invalid action.",
+                    trace_detail="invalid model action",
+                )
             except ModelExhausted:
                 return self._needs_attention(
                     state,
@@ -194,6 +202,14 @@ class SupportFlowGraph:
                     run_id=state["run_id"],
                     repository=self.repository,
                 )
+            except InvalidAction:
+                return self._needs_attention(
+                    state,
+                    "resolve",
+                    code="INVALID_ACTION",
+                    message="Model output proposed an invalid action.",
+                    trace_detail="invalid model action",
+                )
             except ModelExhausted:
                 return self._needs_attention(
                     state,
@@ -221,6 +237,14 @@ class SupportFlowGraph:
                     node_name="review",
                     run_id=state["run_id"],
                     repository=self.repository,
+                )
+            except InvalidAction:
+                return self._needs_attention(
+                    state,
+                    "review",
+                    code="INVALID_ACTION",
+                    message="Model output proposed an invalid action.",
+                    trace_detail="invalid model action",
                 )
             except ModelExhausted:
                 return self._needs_attention(
@@ -295,7 +319,14 @@ class SupportFlowGraph:
             return END if state.get("terminal_state") else "review"
 
         def route_after_review(state: WorkflowState) -> str:
-            if state.get("terminal_state") or state["risk_review"].escalated:
+            if state.get("terminal_state"):
+                return END
+            if state["risk_review"].escalated:
+                return END
+            return "policy"
+
+        def route_after_policy(state: WorkflowState) -> str:
+            if state.get("terminal_state"):
                 return END
             if state["policy_decision"].outcome == "escalate":
                 return END
@@ -314,8 +345,8 @@ class SupportFlowGraph:
         builder.add_conditional_edges("triage", route_after_triage)
         builder.add_conditional_edges("retrieve", route_after_retrieve)
         builder.add_conditional_edges("resolve", route_after_resolve)
-        builder.add_edge("review", "policy")
-        builder.add_conditional_edges("policy", route_after_review)
+        builder.add_conditional_edges("review", route_after_review)
+        builder.add_conditional_edges("policy", route_after_policy)
         builder.add_edge("human_approval", "execute")
         builder.add_edge("execute", END)
         return builder.compile(checkpointer=self.checkpointer)
@@ -351,7 +382,7 @@ class SupportFlowGraph:
         try:
             review = run_model_node(
                 lambda: self.reviewer.run(state["ticket"], proposal, state["evidence"]),
-                node_name="modify",
+                node_name=f"modify-{revision_count}",
                 run_id=state["run_id"],
                 repository=self.repository,
             )
@@ -377,6 +408,17 @@ class SupportFlowGraph:
                     "terminal_state": terminal_state,
                     "trace": [*state.get("trace", []), event],
                 },
+            )
+        except InvalidAction:
+            self.compiled.update_state(
+                config,
+                self._needs_attention(
+                    state,
+                    "modify",
+                    code="INVALID_ACTION",
+                    message="Model output proposed an invalid action.",
+                    trace_detail="invalid model action",
+                ),
             )
         except ModelExhausted:
             self.compiled.update_state(
